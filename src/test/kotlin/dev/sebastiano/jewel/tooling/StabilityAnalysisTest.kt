@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
+@Suppress("LargeClass") // Shared Kotlin PSI fixture covers inference and its editor presentation.
 class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
   override fun getProjectDescriptor(): com.intellij.testFramework.LightProjectDescriptor =
     object : com.intellij.testFramework.LightProjectDescriptor() {
@@ -193,7 +194,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
   fun testTooltipKeepsExplanationAndLimits() {
     val tooltip = JewelToolingBundle.message("hint.tooltip", "count", "stable", "A specific reason")
     assertTrue(tooltip.contains("A specific reason"))
-    assertTrue(tooltip.contains("strong skipping"))
+    assertTrue(tooltip.contains("Static estimate"))
     assertTrue(tooltip.contains('\n'))
   }
 
@@ -212,7 +213,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     assertEquals(source.indexOf("Int") + 3, captured.single().offset)
     assertEquals("stable", captured.single().label)
     assertTrue(captured.single().tooltip.contains("built-in stable type"))
-    assertTrue(captured.single().tooltip.contains("strong skipping"))
+    assertTrue(captured.single().tooltip.contains("Static estimate"))
   }
 
   fun testFailureContainmentAndCancellation() {
@@ -441,6 +442,210 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
       "reason.fields",
     )
   }
+
+  fun testReportDistinguishesEmptyComposableAndCapturesTypes() {
+    myFixture.configureByText(
+      "Example.kt",
+      """
+      import androidx.compose.runtime.Composable as Render
+      @Render fun Empty() {}
+      @Render fun String.Demo(values: List<String>) {}
+      fun Ordinary() {}
+      """
+        .trimIndent(),
+    )
+    val reports = backgroundRead {
+      (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().map {
+        StabilityAnalysis.inspect(it)
+      }
+    }
+    assertNotNull(reports[0])
+    assertTrue(reports[0]!!.parameters.isEmpty())
+    assertEquals(
+      JewelToolingBundle.message("summary.empty"),
+      StabilityPresentation.counts(reports[0]!!),
+    )
+    assertEquals(listOf("String", "List<String>"), reports[1]!!.parameters.map { it.typeText })
+    assertEquals("1 stable · 1 unstable · 0 unknown", StabilityPresentation.counts(reports[1]!!))
+    assertNull(reports[2])
+  }
+
+  fun testMarkersResolveIdentityEscapeNamesAndUpdateAfterEdits() {
+    myFixture.configureByText(
+      "Example.kt",
+      """
+      import androidx.compose.runtime.Composable as Render
+      class Model(val name: String)
+      @Render fun `<demo>`(model: Model, external: Pair<String, String>) {}
+      """
+        .trimIndent(),
+    )
+    val first = markers().single()
+    assertTrue(first.lineMarkerTooltip!!.contains("&lt;demo&gt;"))
+    assertTrue(first.lineMarkerTooltip!!.contains("1 stable · 0 unstable · 1 unknown"))
+    WriteCommandAction.runWriteCommandAction(project) {
+      val start = myFixture.editor.document.text.indexOf("val name")
+      myFixture.editor.document.replaceString(start, start + 3, "var")
+      PsiDocumentManager.getInstance(project).commitAllDocuments()
+    }
+    assertTrue(markers().single().lineMarkerTooltip!!.contains("0 stable · 1 unstable · 1 unknown"))
+    myFixture.configureByText(
+      "Example.kt",
+      "annotation class Composable; @Composable fun Fake(value: Int) {}",
+    )
+    assertTrue(markers().isEmpty())
+  }
+
+  fun testMarkerDefersDuringIndexing() {
+    myFixture.configureByText(
+      "Example.kt",
+      "import androidx.compose.runtime.Composable; @Composable fun Demo(value: Int) {}",
+    )
+    com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
+      val result = mutableListOf<com.intellij.codeInsight.daemon.LineMarkerInfo<*>>()
+      val function =
+        (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().single()
+      StabilityLineMarkerProvider { error("Must not analyze during indexing") }
+        .collectSlowLineMarkers(listOf(function.nameIdentifier!!), result)
+      assertTrue(result.isEmpty())
+    }
+  }
+
+  fun testMarkerFailureContainmentAndCancellation() {
+    myFixture.configureByText(
+      "Example.kt",
+      "import androidx.compose.runtime.Composable; @Composable fun Broken() {}; @Composable fun Good() {}",
+    )
+    val result =
+      markers(
+        StabilityLineMarkerProvider { function ->
+          if (function.name == "Broken") throw IllegalStateException("Intentional fixture failure")
+          FunctionStability(function.name!!, emptyList())
+        }
+      )
+    assertEquals(1, result.size)
+    val failure =
+      org.junit.Assert.assertThrows(java.util.concurrent.ExecutionException::class.java) {
+        markers(StabilityLineMarkerProvider { throw ProcessCanceledException() })
+      }
+    assertTrue(failure.cause is ProcessCanceledException)
+  }
+
+  fun testMarkerStressAndNativeRegistration() {
+    val source =
+      "annotation class Other;\n" +
+        (1..500).joinToString("\n") { "@Other fun Demo$it(value: Int) {}" }
+    myFixture.configureByText("Example.kt", source)
+    val started = System.nanoTime()
+    assertTrue(markers().isEmpty())
+    assertTrue(
+      "500 marker candidates exceeded 30 seconds",
+      System.nanoTime() - started < TimeUnit.SECONDS.toNanos(30),
+    )
+    assertNotNull(
+      com.intellij.openapi.actionSystem.ActionManager.getInstance()
+        .getAction("JewelTooling.ShowStability")
+    )
+    myFixture.configureByText(
+      "Example.kt",
+      "import androidx.compose.runtime.Composable; @Composable fun Demo(value: Int) {}",
+    )
+    assertTrue(
+      myFixture.findAllGutters().any {
+        it.tooltipText?.contains("Click to inspect parameter stability") == true
+      }
+    )
+  }
+
+  fun testNativeGutterSettingHidesAndRestoresSummary() {
+    myFixture.configureByText(
+      "Example.kt",
+      "import androidx.compose.runtime.Composable; @Composable fun Demo(value: Int) {}",
+    )
+    val provider = StabilityLineMarkerProvider()
+    val settings = com.intellij.codeInsight.daemon.LineMarkerSettings.getSettings()
+    try {
+      settings.setEnabled(provider, false)
+      com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project)
+        .restart(myFixture.file, "Gutter setting changed in test")
+      assertFalse(
+        myFixture.findAllGutters().any {
+          it.tooltipText?.contains("Click to inspect parameter stability") == true
+        }
+      )
+      settings.setEnabled(provider, true)
+      com.intellij.codeInsight.daemon.DaemonCodeAnalyzer.getInstance(project)
+        .restart(myFixture.file, "Gutter setting changed in test")
+      assertTrue(
+        myFixture.findAllGutters().any {
+          it.tooltipText?.contains("Click to inspect parameter stability") == true
+        }
+      )
+    } finally {
+      settings.setEnabled(provider, true)
+    }
+  }
+
+  fun testDetailsUsePlainAccessibleTextAndPreserveLimits() {
+    val report =
+      FunctionStability(
+        "<html>Demo",
+        listOf(
+          ParameterHint(
+            0,
+            "<html>value",
+            StabilityAssessment(Stability.UNKNOWN, "Unresolved <type> & reason"),
+            "Pair<String, String>",
+          )
+        ),
+      )
+    val panel = StabilityDetailsPanel(report)
+    assertEquals("Unresolved <type> & reason", panel.focus.accessibleContext.accessibleName)
+    assertTrue("Tab must leave selectable explanation text", panel.focus.focusTraversalKeysEnabled)
+    fun texts(component: java.awt.Component): List<String> =
+      (when (component) {
+        is javax.swing.JLabel -> {
+          assertEquals(true, component.getClientProperty("html.disable"))
+          listOf(component.text.orEmpty())
+        }
+        is javax.swing.text.JTextComponent -> listOf(component.text.orEmpty())
+        else -> emptyList()
+      }) +
+        if (component is java.awt.Container) component.components.flatMap { texts(it) }
+        else emptyList()
+    val content = texts(panel.component).joinToString("\n")
+    assertTrue(content.contains("<html>Demo"))
+    assertTrue(content.contains("Pair<String, String>"))
+    assertTrue(content.contains("strong skipping"))
+    assertTrue(content.contains("Context parameters are not analyzed"))
+    assertEquals(Stability.UNKNOWN, StabilityPresentation.overall(report))
+    assertEquals(
+      Stability.UNKNOWN,
+      StabilityPresentation.overall(FunctionStability("Empty", emptyList())),
+    )
+  }
+
+  private fun markers(
+    provider: StabilityLineMarkerProvider = StabilityLineMarkerProvider()
+  ): List<com.intellij.codeInsight.daemon.LineMarkerInfo<*>> = backgroundRead {
+    val result = mutableListOf<com.intellij.codeInsight.daemon.LineMarkerInfo<*>>()
+    val names =
+      (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().mapNotNull {
+        it.nameIdentifier
+      }
+    provider.collectSlowLineMarkers(names, result)
+    result
+  }
+
+  @Suppress("DEPRECATION") // This fixture must propagate explicit cancellation.
+  private fun <T> backgroundRead(block: () -> T): T =
+    AppExecutorUtil.getAppExecutorService()
+      .submit(
+        Callable {
+          com.intellij.openapi.application.ReadAction.compute<T, RuntimeException> { block() }
+        }
+      )
+      .get(30, TimeUnit.SECONDS)
 
   private data class CapturedHint(val offset: Int, val label: String, val tooltip: String)
 

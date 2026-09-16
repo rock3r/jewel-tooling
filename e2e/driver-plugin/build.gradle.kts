@@ -18,6 +18,12 @@ repositories {
 kotlin { jvmToolchain(21) }
 
 dependencies {
+  implementation("dev.sebastiano.spectre:spectre-recording:${libs.versions.spectre.get()}")
+  if (System.getProperty("os.name").startsWith("Mac"))
+    runtimeOnly("dev.sebastiano.spectre:spectre-recording-macos:${libs.versions.spectre.get()}")
+  if (System.getProperty("os.name").startsWith("Linux"))
+    runtimeOnly("dev.sebastiano.spectre:spectre-recording-linux:${libs.versions.spectre.get()}")
+
   implementation("dev.sebastiano.spectre:spectre-core:${libs.versions.spectre.get()}")
   intellijPlatform {
     intellijIdea(libs.versions.idea.get())

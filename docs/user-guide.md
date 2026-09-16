@@ -1,10 +1,10 @@
 # Jewel Tooling user guide
 
-Jewel Tooling shows a static stability estimate beside each parameter of a Kotlin `@Composable` function. Hover over a hint to see its reason. It helps you inspect Jewel and Compose APIs without running the application or changing its source.
+Jewel Tooling shows a static stability estimate beside each parameter of a Kotlin `@Composable` function. Hover over a hint to see its reason, or click the function’s gutter indicator to inspect all its inputs. It helps you inspect Jewel and Compose APIs without running the application or changing its source.
 
 ## Install the plugin
 
-Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.1.1.zip` and restart when prompted.
+Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.1.2.zip` and restart when prompted.
 
 The build targets IntelliJ IDEA 2026.2.0.1 with its bundled Kotlin plugin. This IDE uses K2. There is no upper IDE build limit, so newer IDEs can install the plugin. Only build 262.8665.337 has been validated; newer IDE and Android Studio builds may need API compatibility fixes.
 
@@ -36,13 +36,25 @@ The explanation tells you which rule produced the estimate. `@Stable` and `@Immu
 
 These hints are not Compose compiler reports. A stability estimate alone does not say whether a function will recompose. With strong skipping, an unstable parameter can still permit skipping when its relevant identity has not changed.
 
-![A stability hint showing the inferred reason and the limits of static analysis](images/explanation.png)
+![A compact stability hint showing the inferred reason](images/explanation.png)
 
-Hover over a hint to read its reason and the distinction between stability and skipping.
+Hover over a hint for its status and reason. The longer explanation of stability and skipping is in the function detail view.
+
+## Inspect a function
+
+Click the gutter indicator beside a composable function to open **Compose stability**. The popup shows the function name, status counts, and each input’s source type and explanation. Green check icons identify stable inputs, warning icons identify unstable inputs, and question icons identify unknown inputs. Text accompanies every status. These are input estimates, not a verdict that the function is skippable.
+
+![Function stability details in the dark IDE theme](images/details-dark.png)
+
+To open the same view from the keyboard, place the caret inside the function, open **Find Action**, and choose **Inspect Compose Stability**. The action is also in the editor context menu. You can select and copy explanation text, scroll through longer parameter lists, and resize the popup. Press **Escape** to return to the editor. Editing the source or switching editors closes the popup so it cannot keep showing an outdated result.
+
+![The same details in the light IDE theme](images/details-light.png)
+
+Counts include value parameters and an extension receiver, when present. Context parameters are not analyzed. Functions with no covered inputs show that explicitly. An unstable input takes precedence in the gutter icon; otherwise an unknown input takes precedence over stable inputs.
 
 ## Change hint visibility
 
-Open **Settings → Editor → Inlay Hints** and find **Compose parameter stability** under Kotlin. Turn the provider off to hide its hints; turn it on to restore them. The setting does not modify your source or build.
+Open **Settings → Editor → Inlay Hints** and find **Compose parameter stability** under Kotlin. Turn the provider off to hide its hints; turn it on to restore them. The setting does not modify your source or build. Gutter indicators have a separate switch under **Settings → Editor → General → Gutter Icons → Compose stability summary**. The detail action remains available when indicators are hidden.
 
 ## Understand the limits
 
@@ -68,11 +80,11 @@ V1 does not collect recomposition events or open a network port. Dynamic inspect
 
 Unit and IDE fixture tests run with `./gradlew :test`. The separate IDE Starter runner uses JDK 25. Its test-only plugin inspects real rendered inlays and uses Spectre for device-scale captures. No Spectre code is packaged in the production ZIP.
 
-Documentation captures require an unlocked graphical session, screen-capture permission, and a real AWT device transform of 2.0. The capture harness checks native PNG dimensions and never upscales a 1x image. Public Linux CI exercises headed scenarios under Xvfb and verifies committed screenshot hashes and source provenance; it does not claim to regenerate Retina assets.
+Documentation captures require an unlocked graphical session, screen-capture permission, and a real AWT device transform of 2.0. On macOS, Spectre captures the target window through its native helper, excluding other applications. The capture harness checks native PNG dimensions and never upscales a 1x image. Public Linux CI exercises headed scenarios under Xvfb and verifies committed screenshot hashes and source provenance; it does not claim to regenerate Retina assets.
 
 ## Run the end-to-end tests
 
-The editor tests install the production ZIP and a separate test driver in disposable IDEA instances. IDE Driver and platform actions inspect rendered inlays, edit a property, hover a hint, and toggle the provider. Spectre captures the editor and drives the actual Compose surfaces through their semantics. The production plugin does not depend on the test driver or Spectre.
+The editor tests install the production ZIP and a separate test driver in disposable IDEA instances. IDE Driver and platform actions inspect rendered inlays, edit a property, hover a hint, toggle the provider, click a gutter indicator, and exercise the detail action and Escape dismissal. They also check that an edit dismisses an open detail view. Spectre captures the editor and drives the actual Compose surfaces through their semantics. The production plugin does not depend on the test driver or Spectre.
 
 ```sh
 ./gradlew :e2e:driver-plugin:exportFixtureSdk
@@ -91,7 +103,7 @@ Spectre verifies that clicking **Add item** changes the count from one to two.
 
 The IntelliJ fixture runs against the IDE's Compose and Jewel runtime.
 
-To regenerate the five guide images on a Retina display, run:
+To regenerate the seven guide images on a Retina display, run:
 
 ```sh
 ./scripts/capture-retina.sh

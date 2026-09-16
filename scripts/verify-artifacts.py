@@ -72,7 +72,7 @@ def verify_images(root):
         raise ValueError("Capture input inventory changed; regenerate assets")
     if source_digest(root, manifest["inputs"]) != manifest["sourceSha256"]:
         raise ValueError("Capture inputs changed; regenerate Retina assets in this change")
-    expected = {"standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation"}
+    expected = {"standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light"}
     if len(manifest["images"]) != len(expected) or {entry["scenario"] for entry in manifest["images"]} != expected:
         raise ValueError("Missing or unexpected documentation scenario")
     for entry in manifest["images"]:

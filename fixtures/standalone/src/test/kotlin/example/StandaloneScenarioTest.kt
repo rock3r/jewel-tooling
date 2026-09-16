@@ -2,6 +2,8 @@ package example
 
 import dev.sebastiano.spectre.core.ComposeAutomator
 import dev.sebastiano.spectre.core.RobotDriver
+import dev.sebastiano.spectre.recording.AutoScreenshotter
+import dev.sebastiano.spectre.recording.screencapturekit.asTitledWindow
 import dev.sebastiano.spectre.testing.runSpectreTest
 import java.awt.Rectangle
 import java.nio.file.Files
@@ -33,7 +35,16 @@ class StandaloneScenarioTest {
         scaleX = window.graphicsConfiguration.defaultTransform.scaleX
         scaleY = window.graphicsConfiguration.defaultTransform.scaleY
       }
-      val image = robot.screenshotAtDeviceScale(region)
+      val image =
+        if (System.getProperty("os.name").startsWith("Mac")) {
+          val captured = AutoScreenshotter().captureWindow(window.asTitledWindow())
+          captured.getSubimage(
+            ((region.x - window.x) * scaleX).toInt(),
+            ((region.y - window.y) * scaleY).toInt(),
+            (region.width * scaleX).toInt(),
+            (region.height * scaleY).toInt(),
+          )
+        } else robot.screenshotAtDeviceScale(region)
       check(image.width == (region.width * scaleX).toInt())
       check(image.height == (region.height * scaleY).toInt())
       if (java.lang.Boolean.getBoolean("jewel.test.retina")) check(scaleX == 2.0 && scaleY == 2.0)

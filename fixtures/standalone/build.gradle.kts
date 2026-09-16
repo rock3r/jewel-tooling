@@ -23,10 +23,12 @@ dependencies {
   }
   implementation("org.jetbrains.jewel:jewel-int-ui-standalone:${libs.versions.jewel.get()}")
   testImplementation("dev.sebastiano.spectre:spectre-core:${libs.versions.spectre.get()}")
-  testImplementation("dev.sebastiano.spectre:spectre-testing:${libs.versions.spectre.get()}") {
-    // This fixture uses screen-region stills, not the optional native recording helper.
-    exclude(group = "dev.sebastiano.spectre", module = "spectre-recording")
-  }
+  testImplementation("dev.sebastiano.spectre:spectre-testing:${libs.versions.spectre.get()}")
+  testImplementation("dev.sebastiano.spectre:spectre-recording:${libs.versions.spectre.get()}")
+  if (System.getProperty("os.name").startsWith("Mac"))
+    testRuntimeOnly("dev.sebastiano.spectre:spectre-recording-macos:${libs.versions.spectre.get()}")
+  if (System.getProperty("os.name").startsWith("Linux"))
+    testRuntimeOnly("dev.sebastiano.spectre:spectre-recording-linux:${libs.versions.spectre.get()}")
   testImplementation("org.junit.jupiter:junit-jupiter:${libs.versions.junit.get()}")
   testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

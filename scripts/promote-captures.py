@@ -55,6 +55,8 @@ def main():
     captures = [
         ("standalone-editor", selected["standalone"], "editor-before.png", "capture.json"),
         ("explanation", selected["standalone"], "explanation.png", "capture.json"),
+        ("details-dark", selected["standalone"], "details-dark.png", "details-dark-capture.json"),
+        ("details-light", selected["standalone"], "details-light.png", "details-light-capture.json"),
         ("ijpl-editor", selected["ijpl"], "editor-before.png", "capture.json"),
         ("ijpl-ui", selected["ijpl"], "ijpl-ui.png", "ijpl-capture.json"),
         ("standalone-ui", standalone, "standalone-ui.png", "capture.json"),
@@ -77,7 +79,7 @@ def main():
         shutil.copyfile(source, target)
     (destination / "manifest.json").write_text(json.dumps({"schemaVersion": 1, "captureId": args.capture_id, "inputs": inputs, "sourceSha256": digest, "images": images}, indent=2) + "\n")
     verify.verify_images(ROOT)
-    print("Promoted five verified native Retina captures")
+    print("Promoted seven verified native Retina captures")
 
 
 if __name__ == "__main__":

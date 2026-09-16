@@ -17,9 +17,14 @@ class Greeting(val title: String)
 
 @Suppress("MagicNumber") // Fixed layout spacing in the public example.
 @Composable
-fun GreetingRow(greeting: Greeting, items: List<String>, onIncrement: () -> Unit) {
+fun GreetingRow(
+  greeting: Greeting,
+  items: List<String>,
+  metadata: Pair<String, String> = "Jewel" to "Compose",
+  onIncrement: () -> Unit,
+) {
   Column {
-    Text(greeting.title)
+    Text("${metadata.first}: ${greeting.title}")
     Spacer(Modifier.height(16.dp))
     Text("Items: ${items.size}", modifier = Modifier.testTag("items-count"))
     Spacer(Modifier.height(16.dp))

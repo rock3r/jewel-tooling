@@ -19,9 +19,11 @@ To use an existing compatible IDE distribution instead of downloading one:
 ./gradlew -PlocalIdePath=/path/to/IntelliJIDEA.app/Contents :buildPlugin
 ```
 
-Install `build/distributions/jewel-tooling-0.1.1.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
+Install `build/distributions/jewel-tooling-0.1.2.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
 Open a project, allow indexing to finish, then open a Kotlin file with `@Composable` functions.
-Hints appear after parameter types; hover for explanations. Toggle them under
+Hints appear after parameter types; hover for a short explanation. Click a function’s gutter indicator
+for a summary and a scrollable explanation of every input, or use **Inspect Compose Stability** in Find Action.
+Toggle inline hints under
 **Settings > Editor > Inlay Hints**, under Kotlin; look for **Compose parameter stability**.
 The Gradle wrapper here builds the IDE plugin; it imposes no build system on the project being analyzed.
 

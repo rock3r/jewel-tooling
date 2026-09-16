@@ -57,7 +57,7 @@ class ScreenshotProvenanceTest(unittest.TestCase):
         images = self.root / "docs/images"
         images.mkdir(parents=True)
         entries = []
-        for scenario in ["standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation"]:
+        for scenario in ["standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light"]:
             data = b"\x89PNG\r\n\x1a\n" + b"\0" * 8 + struct.pack(">II", 200, 100)
             relative = "docs/images/" + scenario + ".png"
             (self.root / relative).write_bytes(data)

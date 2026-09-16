@@ -1,11 +1,13 @@
 {
   "schemaVersion": 1,
-  "captureId": "compatibility-unbounded-fixed-20260916",
+  "captureId": "polish-20260917-d",
   "inputs": [
     "build.gradle.kts",
     "config/detekt.yml",
     "e2e/driver-plugin/build.gradle.kts",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/DetailsScenario.kt",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/EditorScenarioAction.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/WindowCapture.kt",
     "e2e/driver-plugin/src/main/resources/META-INF/plugin.xml",
     "e2e/runner/build.gradle.kts",
     "e2e/runner/src/test/kotlin/dev/sebastiano/jewel/tooling/e2e/EditorSpikeTest.kt",
@@ -34,40 +36,62 @@
     "scripts/verify-artifacts.py",
     "settings.gradle.kts",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/JewelToolingBundle.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/ShowStabilityAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityAnalysis.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityDetailsService.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityInlayProvider.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityLineMarkerProvider.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityPresentation.kt",
     "src/main/resources/META-INF/plugin.xml",
     "src/main/resources/inlayProviders/jewel.compose.stability/preview.kt",
     "src/main/resources/messages/JewelToolingBundle.properties"
   ],
-  "sourceSha256": "d8d1e7132ef873d122bbfea8b94d3d1302df94ac19dac8d07d8ba2f662c36274",
+  "sourceSha256": "5989a9bf3afa7fc2bfec78792418dcdc0dc64001ef4b6b7bf50e26bf869b29a9",
   "images": [
     {
       "scenario": "standalone-editor",
       "path": "docs/images/standalone-editor.png",
-      "logicalWidth": 838,
-      "logicalHeight": 500,
+      "logicalWidth": 858,
+      "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "8f6107323a7b8f855d8d4e976a9eaebc6c1c7cf9f51ca445cbd1f990d52b1fe3"
+      "sha256": "342da341af784f6825ae974ffefc710200254262e90b64e4549ddb78e75e23ae"
     },
     {
       "scenario": "explanation",
       "path": "docs/images/explanation.png",
-      "logicalWidth": 838,
-      "logicalHeight": 500,
+      "logicalWidth": 858,
+      "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "b6ff5c5413676fbbbaf784161f4ddd4c261677055a486bbb8743f7caad29f905"
+      "sha256": "fc01ef132d3a11fdc6377cbe9414fed390315454297886a5d59a8f0f9b3d5c7c"
+    },
+    {
+      "scenario": "details-dark",
+      "path": "docs/images/details-dark.png",
+      "logicalWidth": 580,
+      "logicalHeight": 559,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "8fc6a7c52567997a0bb91bc8291790ca3e67f76e2c30745b01e8f7a214d9f4ff"
+    },
+    {
+      "scenario": "details-light",
+      "path": "docs/images/details-light.png",
+      "logicalWidth": 580,
+      "logicalHeight": 559,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "5e9cec1d7a946a89ade0f9e6316cd37bc5671e9896609400d67981c981a5d64a"
     },
     {
       "scenario": "ijpl-editor",
       "path": "docs/images/ijpl-editor.png",
-      "logicalWidth": 838,
-      "logicalHeight": 500,
+      "logicalWidth": 858,
+      "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "87f644512196bae1b4deabf012a1f407c0464400a63e0f9aea4f964940994e0e"
+      "sha256": "bc665232775e70c585aeb9847e989d6cc181ebc21a90c2f6c28e3cac140c1a85"
     },
     {
       "scenario": "ijpl-ui",
@@ -76,7 +100,7 @@
       "logicalHeight": 240,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "19123773329061c05c66a7d094a910a7db97d6d4268903d2ebdb4242794eaa47"
+      "sha256": "8009f256043bac4d59c8764816aa8ff64e6af336960593427c1101dda5f503f4"
     },
     {
       "scenario": "standalone-ui",
@@ -85,7 +109,7 @@
       "logicalHeight": 372,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "830b9cc4aea82de518a1016f86fab0b78f27f751ecfa6cd219f5e87fb326d782"
+      "sha256": "31730c6a0161740031924e79edd0f380cb339ee342fe3382d6442de50a4d7cb2"
     }
   ]
 }

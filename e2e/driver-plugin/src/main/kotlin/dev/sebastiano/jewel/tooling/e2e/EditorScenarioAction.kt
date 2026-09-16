@@ -4,6 +4,7 @@ import com.intellij.codeInsight.daemon.impl.DaemonCodeAnalyzerEx
 import com.intellij.codeInsight.hints.declarative.DeclarativeInlayHintsSettings
 import com.intellij.codeInsight.hints.declarative.impl.DeclarativeInlayHintsPassFactory
 import com.intellij.codeInsight.hints.declarative.impl.inlayRenderer.DeclarativeInlayRenderer
+import com.intellij.ide.ui.LafManager
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -56,7 +57,7 @@ import org.jetbrains.plugins.gradle.util.GradleConstants
 /** Installed only in disposable test IDEs; assertions inspect rendered platform inlays. */
 class EditorScenarioAction : AnAction() {
   // Keep the ordered UI scenario together; failures cross the test-process boundary as evidence.
-  @Suppress("LongMethod", "TooGenericExceptionCaught")
+  @Suppress("LongMethod", "TooGenericExceptionCaught", "CyclomaticComplexMethod")
   override fun actionPerformed(event: AnActionEvent) {
     val project = requireNotNull(event.project)
     val output = Path.of(System.getProperty("jewel.test.output"))
@@ -90,6 +91,12 @@ class EditorScenarioAction : AnAction() {
                   .openTextEditor(OpenFileDescriptor(project, file), true)
               )
             }
+            if (System.getProperty("jewel.test.target") != null)
+              edt {
+                val laf = LafManager.getInstance()
+                laf.setCurrentUIThemeLookAndFeel(requireNotNull(laf.defaultDarkLaf))
+                laf.updateUI()
+              }
             val expected = System.getProperty("jewel.test.expected", "stable,unstable").split(",")
             if (System.getProperty("jewel.test.target") != null) {
               Files.writeString(
@@ -146,11 +153,12 @@ class EditorScenarioAction : AnAction() {
             Files.writeString(output.resolve("diagnostics.txt"), errors.joinToString("\n"))
             check(errors.isEmpty()) { "Editor errors: $errors" }
             val region = edt {
-              Rectangle(editor.contentComponent.locationOnScreen, editor.contentComponent.size)
-                .apply { height = minOf(height, EDITOR_CAPTURE_HEIGHT) }
+              Rectangle(editor.component.locationOnScreen, editor.component.size).apply {
+                height = minOf(height, EDITOR_CAPTURE_HEIGHT)
+              }
             }
             val transform = edt { editor.contentComponent.graphicsConfiguration.defaultTransform }
-            val image = robot.screenshotAtDeviceScale(region)
+            val image = WindowCapture.capture(frame, region, robot)
             check(image.width == (region.width * transform.scaleX).toInt())
             check(image.height == (region.height * transform.scaleY).toInt())
             if (java.lang.Boolean.getBoolean("jewel.test.retina"))
@@ -180,7 +188,7 @@ class EditorScenarioAction : AnAction() {
                   origin.y + bounds.y + bounds.height / 2,
                 )
               }
-              RobotDriver().moveTo(point.x, point.y)
+              robot.moveTo(point.x, point.y)
               await {
                 edt {
                   Window.getWindows()
@@ -190,10 +198,13 @@ class EditorScenarioAction : AnAction() {
                 }
               }
               ImageIO.write(
-                robot.screenshotAtDeviceScale(region),
+                WindowCapture.capture(frame, region, robot),
                 "png",
                 output.resolve("explanation.png").toFile(),
               )
+            }
+            if (System.getProperty("jewel.test.target") != null) {
+              DetailsScenario().inspect(robot, editor, project, output)
             }
             edt {
               WriteCommandAction.runWriteCommandAction(project) {
@@ -238,7 +249,7 @@ class EditorScenarioAction : AnAction() {
                   height = minOf(height, TOOL_CAPTURE_HEIGHT)
                 }
               }
-              val toolImage = robot.screenshotAtDeviceScale(toolRegion)
+              val toolImage = WindowCapture.capture(frame, toolRegion, robot)
               ImageIO.write(toolImage, "png", output.resolve("ijpl-ui.png").toFile())
               Files.writeString(
                 output.resolve("ijpl-capture.json"),
@@ -349,7 +360,7 @@ class EditorScenarioAction : AnAction() {
   companion object {
     private const val SCENARIO_TIMEOUT_MS = 900_000L
     private const val PAINT_SETTLE_MS = 500L
-    private const val EDITOR_CAPTURE_HEIGHT = 500
+    private const val EDITOR_CAPTURE_HEIGHT = 620
     private const val TOOL_CAPTURE_HEIGHT = 240
     private const val IMPORT_TIMEOUT_MINUTES = 10L
     private const val CONDITION_TIMEOUT_MS = 60_000L

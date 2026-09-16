@@ -37,16 +37,22 @@ internal data class ParameterHint(
   val offset: Int,
   val name: String,
   val assessment: StabilityAssessment,
+  val typeText: String = "",
 )
+
+internal data class FunctionStability(val name: String, val parameters: List<ParameterHint>)
 
 /** Analysis symbols stay inside analyze; only immutable presentation data escapes. */
 internal object StabilityAnalysis {
   fun hints(function: KtNamedFunction, visitLimit: Int = 256): List<ParameterHint> =
+    inspect(function, visitLimit)?.parameters.orEmpty()
+
+  fun inspect(function: KtNamedFunction, visitLimit: Int = 256): FunctionStability? =
     analyze(function) {
-      val symbol = function.symbol as? KaNamedFunctionSymbol ?: return@analyze emptyList()
+      val symbol = function.symbol as? KaNamedFunctionSymbol ?: return@analyze null
       if (symbol.annotations.none { it.classId?.asFqNameString() == COMPOSABLE })
-        return@analyze emptyList()
-      if (function.valueParameters.size != symbol.valueParameters.size) return@analyze emptyList()
+        return@analyze null
+      if (function.valueParameters.size != symbol.valueParameters.size) return@analyze null
       val hints = mutableListOf<ParameterHint>()
       val budget = VisitBudget(visitLimit)
       val receiver = function.receiverTypeReference
@@ -56,6 +62,7 @@ internal object StabilityAnalysis {
             receiver.textRange.endOffset,
             JewelToolingBundle.message("hint.receiver"),
             classify(receiver.type, function, emptyMap(), mutableSetOf(), 0, budget),
+            receiver.text,
           )
       }
       for ((parameter, parameterSymbol) in function.valueParameters.zip(symbol.valueParameters)) {
@@ -65,9 +72,15 @@ internal object StabilityAnalysis {
           if (budget.exhausted) assessment(Stability.UNKNOWN, "reason.bounded")
           else if (parameter.isVarArg) assessment(Stability.UNSTABLE, "reason.vararg")
           else classify(parameterSymbol.returnType, function, emptyMap(), mutableSetOf(), 0, budget)
-        hints += ParameterHint(typeReference.textRange.endOffset, parameter.name ?: "?", result)
+        hints +=
+          ParameterHint(
+            typeReference.textRange.endOffset,
+            parameter.name ?: "?",
+            result,
+            typeReference.text,
+          )
       }
-      hints
+      FunctionStability(function.name.orEmpty(), hints)
     }
 
   // This ordered decision table keeps conservative precedence visible in one place.

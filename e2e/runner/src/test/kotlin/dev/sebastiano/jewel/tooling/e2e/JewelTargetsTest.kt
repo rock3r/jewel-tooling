@@ -87,7 +87,7 @@ class JewelTargetsTest {
             System.getProperty("jewel.test.captureId", "development"),
           )
           addSystemProperty("jewel.test.file", "src/main/kotlin/example/Example.kt")
-          addSystemProperty("jewel.test.expected", "stable,unstable,stable")
+          addSystemProperty("jewel.test.expected", "stable,unstable,unknown,stable")
           addSystemProperty("jewel.test.gradle", target == "standalone")
           addSystemProperty("jewel.test.hover", target == "standalone")
           addSystemProperty("jewel.test.retina", System.getProperty("jewel.test.retina", "false"))
@@ -108,8 +108,11 @@ class JewelTargetsTest {
       check(Files.readString(result).startsWith("PASS:")) { Files.readString(result) }
       check(Files.size(output.resolve("editor-before.png")) > 0)
       check(Files.size(output.resolve("model-roots.txt")) > 0)
-      if (target == "standalone") check(Files.size(output.resolve("explanation.png")) > 0)
-      else check(Files.size(output.resolve("ijpl-ui.png")) > 0)
+      if (target == "standalone") {
+        check(Files.size(output.resolve("explanation.png")) > 0)
+        check(Files.size(output.resolve("details-dark.png")) > 0)
+        check(Files.size(output.resolve("details-light.png")) > 0)
+      } else check(Files.size(output.resolve("ijpl-ui.png")) > 0)
       Files.writeString(output.resolve("scenario.txt"), target)
     }
   }

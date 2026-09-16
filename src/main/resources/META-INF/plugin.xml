@@ -15,6 +15,7 @@
     <supportsKotlinPluginMode supportsK1="false" supportsK2="true"/>
   </extensions>
   <extensions defaultExtensionNs="com.intellij">
+    <codeInsight.lineMarkerProvider language="kotlin" implementationClass="dev.sebastiano.jewel.tooling.StabilityLineMarkerProvider"/>
     <codeInsight.declarativeInlayProvider
       language="kotlin"
       implementationClass="dev.sebastiano.jewel.tooling.StabilityInlayProvider"
@@ -25,4 +26,9 @@
       nameKey="hints.name"
       descriptionKey="hints.description"/>
   </extensions>
+  <actions>
+    <action id="JewelTooling.ShowStability" class="dev.sebastiano.jewel.tooling.ShowStabilityAction">
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+    </action>
+  </actions>
 </idea-plugin>
