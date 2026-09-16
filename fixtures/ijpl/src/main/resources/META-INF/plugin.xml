@@ -1,0 +1,12 @@
+<idea-plugin>
+  <id>dev.sebastiano.jewel.tooling.fixture</id>
+  <name>Jewel Tooling IJPL Fixture</name>
+  <version>0.1.0</version>
+  <vendor>Jewel Tooling contributors</vendor>
+  <idea-version since-build="262.8665.337" until-build="262.*"/>
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.compose</depends>
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="Jewel Fixture" anchor="right" factoryClass="example.FixtureToolWindow"/>
+  </extensions>
+</idea-plugin>

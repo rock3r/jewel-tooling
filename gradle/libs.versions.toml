@@ -1,0 +1,21 @@
+[versions]
+kotlin = "2.4.0"
+intellijPlatform = "2.19.0"
+idea = "2026.2.0.1"
+ideaBuild = "262.8665.337"
+spectre = "0.6.0"
+compose = "1.10.3"
+jewel = "0.38.0-262.8665.351"
+ktfmt = "0.26.0"
+detekt = "2.0.0-alpha.3"
+junit = "5.11.4"
+junit4 = "4.13.2"
+coroutines = "1.10.2"
+
+[plugins]
+kotlin = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+intellijPlatform = { id = "org.jetbrains.intellij.platform", version.ref = "intellijPlatform" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }

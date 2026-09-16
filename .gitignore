@@ -1,0 +1,17 @@
+.gradle/
+.intellijPlatform/
+.idea/
+*.iml
+build/
+out/
+.DS_Store
+.plans/
+
+.local/
+artifacts/
+__pycache__/
+*.pyc
+/fixtures/ijpl/bazel-*
+
+.kotlin/
+allure-results/

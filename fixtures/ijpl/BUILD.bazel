@@ -1,0 +1,11 @@
+load(":kotlin.bzl", "kotlin_library", "sdk_library", "export_ide_model")
+
+sdk_library(name = "sdk", jars = ["@idea_sdk//:api"])
+kotlin_library(
+    name = "fixture",
+    srcs = glob(["src/main/kotlin/**/*.kt"]),
+    deps = [":sdk"],
+    compiler = "@idea_sdk//:compiler",
+    compose_plugin = "@idea_sdk//:compose_plugin",
+)
+export_ide_model(name = "ide_model", target = ":fixture")

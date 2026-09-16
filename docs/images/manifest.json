@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "captureId": "9bb9fe67-1ec4-4fec-8ee8-d230be10c754",
+  "inputs": [
+    "build.gradle.kts",
+    "config/detekt.yml",
+    "e2e/driver-plugin/build.gradle.kts",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/EditorScenarioAction.kt",
+    "e2e/driver-plugin/src/main/resources/META-INF/plugin.xml",
+    "e2e/runner/build.gradle.kts",
+    "e2e/runner/src/test/kotlin/dev/sebastiano/jewel/tooling/e2e/EditorSpikeTest.kt",
+    "e2e/runner/src/test/kotlin/dev/sebastiano/jewel/tooling/e2e/JewelTargetsTest.kt",
+    "fixtures/ijpl/.bazelrc",
+    "fixtures/ijpl/.bazelversion",
+    "fixtures/ijpl/BUILD.bazel",
+    "fixtures/ijpl/MODULE.bazel",
+    "fixtures/ijpl/MODULE.bazel.lock",
+    "fixtures/ijpl/kotlin.bzl",
+    "fixtures/ijpl/src/main/kotlin/example/Example.kt",
+    "fixtures/ijpl/src/main/kotlin/example/FixtureToolWindow.kt",
+    "fixtures/ijpl/src/main/resources/META-INF/plugin.xml",
+    "fixtures/standalone/build.gradle.kts",
+    "fixtures/standalone/settings.gradle.kts",
+    "fixtures/standalone/src/main/kotlin/example/Example.kt",
+    "fixtures/standalone/src/main/kotlin/example/Main.kt",
+    "fixtures/standalone/src/test/kotlin/example/StandaloneScenarioTest.kt",
+    "gradle.properties",
+    "gradle/libs.versions.toml",
+    "gradle/wrapper/gradle-wrapper.jar",
+    "gradle/wrapper/gradle-wrapper.properties",
+    "scripts/capture-retina.sh",
+    "scripts/prepare-bazel-fixture.py",
+    "scripts/promote-captures.py",
+    "scripts/verify-artifacts.py",
+    "settings.gradle.kts",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/JewelToolingBundle.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityAnalysis.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityInlayProvider.kt",
+    "src/main/resources/META-INF/plugin.xml",
+    "src/main/resources/inlayProviders/jewel.compose.stability/preview.kt",
+    "src/main/resources/messages/JewelToolingBundle.properties"
+  ],
+  "sourceSha256": "815ff4c059793a5a368304f7e5bb94df9aa94e2721872e997d477d4c54f5e5d7",
+  "images": [
+    {
+      "scenario": "standalone-editor",
+      "path": "docs/images/standalone-editor.png",
+      "logicalWidth": 838,
+      "logicalHeight": 500,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "0ef765e4489cfb99f32332315ca9f9ab4876b2a952a0705f9995e5b87c9b1146"
+    },
+    {
+      "scenario": "explanation",
+      "path": "docs/images/explanation.png",
+      "logicalWidth": 838,
+      "logicalHeight": 500,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "defff95e0b03ee07eb0b259708ffc48b119d2650c6b7bc8214e91b914d3021cc"
+    },
+    {
+      "scenario": "ijpl-editor",
+      "path": "docs/images/ijpl-editor.png",
+      "logicalWidth": 838,
+      "logicalHeight": 500,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "fcdc3ce80f533d64066fc74fa6af9cc91f6116009cad36fc5bd513c446d5fad6"
+    },
+    {
+      "scenario": "ijpl-ui",
+      "path": "docs/images/ijpl-ui.png",
+      "logicalWidth": 456,
+      "logicalHeight": 240,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "19123773329061c05c66a7d094a910a7db97d6d4268903d2ebdb4242794eaa47"
+    },
+    {
+      "scenario": "standalone-ui",
+      "path": "docs/images/standalone-ui.png",
+      "logicalWidth": 680,
+      "logicalHeight": 372,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "3508658e52373dd15906af81fd7baa98ec5de13d5e41619ddca1bac9d8b60bfd"
+    }
+  ]
+}

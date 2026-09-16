@@ -1,0 +1,35 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+  release:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - name: Verify tag and build the unsigned distribution
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          ./gradlew :buildPlugin :verifyPluginStructure
+          python3 scripts/prepare-distribution.py --tag "$RELEASE_TAG"
+      - name: Publish verified production assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" build/distributions/jewel-tooling-*.zip build/distributions/jewel-tooling-*.zip.sha256 --verify-tag --generate-notes --title "Jewel Tooling $RELEASE_TAG"

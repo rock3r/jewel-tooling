@@ -1,0 +1,24 @@
+name: Bug report
+description: Report incorrect hints or editor behavior.
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Plugin, IDE, and Kotlin versions
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include public sample code and expected versus actual behavior. Remove private source and credentials.
+    validations:
+      required: true
+  - type: dropdown
+    id: model
+    attributes:
+      label: Project model
+      options:
+        - Gradle JVM
+        - Bazel
+        - Other

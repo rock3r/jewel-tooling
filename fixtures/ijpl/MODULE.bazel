@@ -1,0 +1,4 @@
+module(name = "jewel_ijpl_fixture", version = "0.1.0")
+bazel_dep(name = "rules_java", version = "9.3.0")
+bazel_dep(name = "idea_sdk", version = "0.0.0")
+local_path_override(module_name = "idea_sdk", path = ".local/sdk")

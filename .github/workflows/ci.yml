@@ -1,0 +1,99 @@
+name: Validate
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  plugin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Tests, static checks, and distribution verification
+        run: ./gradlew :test :ktfmtCheck :detekt :e2e:driver-plugin:ktfmtCheck :e2e:driver-plugin:detekt :e2e:runner:ktfmtCheck :e2e:runner:detekt :buildPlugin :verifyPluginStructure :verifyPlugin
+      - name: Packaging mutation tests
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+      - name: Verify production ZIP and recorded Retina assets
+        run: |
+          python3 scripts/prepare-distribution.py
+          python3 scripts/verify-artifacts.py --images
+          python3 scripts/check-doc-links.py
+      - name: Production distribution
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-plugin
+          path: |
+            build/distributions/jewel-tooling-*.zip
+            build/distributions/jewel-tooling-*.zip.sha256
+          if-no-files-found: error
+      - name: Diagnostic reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: plugin-reports
+          path: |
+            build/reports/
+            build/test-results/
+          if-no-files-found: warn
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+      - name: Install display dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb libasound2t64 libxi6 libxtst6 libxrender1 fonts-dejavu
+      - uses: bazel-contrib/setup-bazel@c5acdfb288317d0b5c0bbd7a396a3dc868bb0f86 # 0.19.0
+        with:
+          bazelisk-version: 1.27.0
+          module-root: fixtures/ijpl
+          bazelisk-cache: true
+          repository-cache: true
+          cache-save: ${{ github.event_name != 'pull_request' }}
+      - name: Build the real Bazel fixture and export its IDE model
+        run: |
+          ./gradlew :e2e:driver-plugin:exportFixtureSdk
+          python3 scripts/prepare-bazel-fixture.py
+      - name: Real Jewel standalone interaction
+        run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./gradlew -p fixtures/standalone test ktfmtCheck detekt
+      - name: Real editor assertions with Spectre capture
+        run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./gradlew :e2e:runner:test
+      - name: E2E evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-evidence
+          path: |
+            e2e/runner/build/reports/
+            e2e/runner/build/test-results/
+            e2e/runner/build/artifacts/
+            fixtures/standalone/build/reports/
+            fixtures/standalone/build/test-results/
+            fixtures/standalone/build/capture/
+            fixtures/ijpl/build/ide-project/model-evidence.json
+          if-no-files-found: error
