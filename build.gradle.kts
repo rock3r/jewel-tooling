@@ -37,7 +37,7 @@ intellijPlatform {
     name = "Jewel Tooling"
     ideaVersion {
       sinceBuild = libs.versions.ideaBuild.get()
-      untilBuild = "262.*"
+      untilBuild = provider { null }
     }
   }
 }

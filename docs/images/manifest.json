@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "captureId": "9bb9fe67-1ec4-4fec-8ee8-d230be10c754",
+  "captureId": "compatibility-unbounded-fixed-20260916",
   "inputs": [
     "build.gradle.kts",
     "config/detekt.yml",
@@ -40,7 +40,7 @@
     "src/main/resources/inlayProviders/jewel.compose.stability/preview.kt",
     "src/main/resources/messages/JewelToolingBundle.properties"
   ],
-  "sourceSha256": "815ff4c059793a5a368304f7e5bb94df9aa94e2721872e997d477d4c54f5e5d7",
+  "sourceSha256": "d8d1e7132ef873d122bbfea8b94d3d1302df94ac19dac8d07d8ba2f662c36274",
   "images": [
     {
       "scenario": "standalone-editor",
@@ -49,7 +49,7 @@
       "logicalHeight": 500,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "0ef765e4489cfb99f32332315ca9f9ab4876b2a952a0705f9995e5b87c9b1146"
+      "sha256": "8f6107323a7b8f855d8d4e976a9eaebc6c1c7cf9f51ca445cbd1f990d52b1fe3"
     },
     {
       "scenario": "explanation",
@@ -58,7 +58,7 @@
       "logicalHeight": 500,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "defff95e0b03ee07eb0b259708ffc48b119d2650c6b7bc8214e91b914d3021cc"
+      "sha256": "b6ff5c5413676fbbbaf784161f4ddd4c261677055a486bbb8743f7caad29f905"
     },
     {
       "scenario": "ijpl-editor",
@@ -67,7 +67,7 @@
       "logicalHeight": 500,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "fcdc3ce80f533d64066fc74fa6af9cc91f6116009cad36fc5bd513c446d5fad6"
+      "sha256": "87f644512196bae1b4deabf012a1f407c0464400a63e0f9aea4f964940994e0e"
     },
     {
       "scenario": "ijpl-ui",
@@ -85,7 +85,7 @@
       "logicalHeight": 372,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "3508658e52373dd15906af81fd7baa98ec5de13d5e41619ddca1bac9d8b60bfd"
+      "sha256": "830b9cc4aea82de518a1016f86fab0b78f27f751ecfa6cd219f5e87fb326d782"
     }
   ]
 }

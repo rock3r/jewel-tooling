@@ -19,7 +19,7 @@ To use an existing compatible IDE distribution instead of downloading one:
 ./gradlew -PlocalIdePath=/path/to/IntelliJIDEA.app/Contents :buildPlugin
 ```
 
-Install `build/distributions/jewel-tooling-0.1.0.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
+Install `build/distributions/jewel-tooling-0.1.1.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
 Open a project, allow indexing to finish, then open a Kotlin file with `@Composable` functions.
 Hints appear after parameter types; hover for explanations. Toggle them under
 **Settings > Editor > Inlay Hints**, under Kotlin; look for **Compose parameter stability**.
@@ -36,8 +36,8 @@ Read the [user guide](docs/user-guide.md) for explanations, limits, screenshots,
   Bazel files alone are not an IDE Kotlin module model. Once source roots and classpaths resolve, the same analyzer runs.
 - KMP source-set models are not tested in v1. Unannotated types crossing source-set IDE module boundaries remain unknown.
 - No root-directory scanning or build-output parsing. Class and annotation identities come from Kotlin's Analysis API.
-- The platform and Kotlin APIs are version-sensitive. This prototype declares 262.* compatibility; Android Studio builds on other
-  platform baselines need a separately compiled/tested plugin. There is no dependency on Android-specific IDE APIs.
+- The platform and Kotlin APIs are version-sensitive. There is no upper IDE build limit. Only build 262.8665.337 has been
+  validated; newer IDE and Android Studio builds may need API compatibility fixes. There is no dependency on Android-specific IDE APIs.
 
 ## What the hints mean
 
