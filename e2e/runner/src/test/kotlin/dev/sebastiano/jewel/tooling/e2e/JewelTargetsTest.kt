@@ -84,6 +84,10 @@ class JewelTargetsTest {
           addSystemProperty("jewel.test.output", output.toString())
           addSystemProperty("jewel.test.target", target)
           addSystemProperty(
+            "jewel.test.recording",
+            repository.resolve("fixtures/standalone/build/capture/recording.json").toString(),
+          )
+          addSystemProperty(
             "jewel.test.captureId",
             System.getProperty("jewel.test.captureId", "development"),
           )
@@ -109,6 +113,9 @@ class JewelTargetsTest {
       check(Files.readString(result).startsWith("PASS:")) { Files.readString(result) }
       check(Files.size(output.resolve("editor-before.png")) > 0)
       check(Files.size(output.resolve("model-roots.txt")) > 0)
+      check(Files.size(output.resolve("recording.png")) > 0)
+      check(Files.size(output.resolve("recording-evidence.txt")) > 0)
+      check(Files.readString(output.resolve("recording-lifecycle.txt")).startsWith("PASS:"))
       if (target == "standalone") {
         check(Files.size(output.resolve("explanation.png")) > 0)
         check(Files.size(output.resolve("details-dark.png")) > 0)

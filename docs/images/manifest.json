@@ -1,12 +1,13 @@
 {
   "schemaVersion": 1,
-  "captureId": "metadata-20260917-d",
+  "captureId": "recording-final-20260917-b",
   "inputs": [
     "build.gradle.kts",
     "config/detekt.yml",
     "e2e/driver-plugin/build.gradle.kts",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/DetailsScenario.kt",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/EditorScenarioAction.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/RecordingScenario.kt",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/WindowCapture.kt",
     "e2e/driver-plugin/src/main/resources/META-INF/plugin.xml",
     "e2e/runner/build.gradle.kts",
@@ -19,25 +20,45 @@
     "fixtures/ijpl/MODULE.bazel.lock",
     "fixtures/ijpl/kotlin.bzl",
     "fixtures/ijpl/src/main/kotlin/example/Example.kt",
+    "fixtures/ijpl/src/main/kotlin/example/FixtureRecording.kt",
     "fixtures/ijpl/src/main/kotlin/example/FixtureToolWindow.kt",
     "fixtures/ijpl/src/main/resources/META-INF/plugin.xml",
     "fixtures/standalone/build.gradle.kts",
     "fixtures/standalone/settings.gradle.kts",
     "fixtures/standalone/src/main/kotlin/example/Example.kt",
+    "fixtures/standalone/src/main/kotlin/example/FixtureRecording.kt",
     "fixtures/standalone/src/main/kotlin/example/Main.kt",
     "fixtures/standalone/src/test/kotlin/example/StandaloneScenarioTest.kt",
     "gradle.properties",
     "gradle/libs.versions.toml",
     "gradle/wrapper/gradle-wrapper.jar",
     "gradle/wrapper/gradle-wrapper.properties",
+    "recording-compose/build.gradle.kts",
+    "recording-compose/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/OwnedCompositionTracer.kt",
+    "recording-compose/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/OwnedCompositionTracerTest.kt",
+    "recording/build.gradle.kts",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/CompositionRecorder.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/Recording.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingCodec.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingFiles.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/SiteSummary.kt",
+    "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/CompositionRecorderTest.kt",
+    "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingCodecTest.kt",
+    "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingFilesTest.kt",
+    "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingSummaryTest.kt",
     "scripts/capture-retina.sh",
     "scripts/prepare-bazel-fixture.py",
     "scripts/promote-captures.py",
     "scripts/verify-artifacts.py",
+    "scripts/verify-trace-markers.py",
     "settings.gradle.kts",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/BinaryMetadataReader.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/CompilerStabilityMetadata.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/JewelToolingBundle.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/OpenRecordingAction.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportDialog.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportPanel.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportService.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/ShowStabilityAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityAnalysis.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityDetailsService.kt",
@@ -50,7 +71,7 @@
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "74894f6a1efa5c0e2770392c66a799efcb0027fffc481365c43ed2d8b6612d85",
+  "sourceSha256": "c9faa2995fe66ec73922fda3e623a464eca555c30382d14685b5139ae7a0fcb5",
   "images": [
     {
       "scenario": "standalone-editor",
@@ -59,7 +80,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "3d7e9dbbb4955cce9192053a63dcbaee5cfe85c06184021aa48ce71960dfdb8d"
+      "sha256": "f9ed01cfba769ecfa225fe1677324f22c518a705d7f7082428036ca496c7f642"
     },
     {
       "scenario": "explanation",
@@ -68,7 +89,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "c2315e53a8f697206f81746f3cb5f72ecf7435de3635c8861728209a37ec75a2"
+      "sha256": "00c6110ebfcf0530c143dd077fa580236b6918a1f8839a27e763fe494e70ce05"
     },
     {
       "scenario": "details-dark",
@@ -86,7 +107,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "8cc7e1d030c9966e4f24a595f0c2691da1ae57c5b068914f19c3a858dc5b9d60"
+      "sha256": "09a4d49528111f8a962c091bb7979632629f1deef1188bd1ffd85eb8a4088785"
     },
     {
       "scenario": "ijpl-editor",
@@ -95,7 +116,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "fdb12f2088e8839951bbc412596d06dc060655a5b6fb0e6778ca8b16ed288bd6"
+      "sha256": "69c1e3cd3bfca6d780ea346510acdbbf315866fdd447348c935779360c88ac16"
     },
     {
       "scenario": "ijpl-ui",
@@ -114,6 +135,24 @@
       "scaleX": 2,
       "scaleY": 2,
       "sha256": "b9dbff1062a2c259916ec90252efb0f24dc33272fd782e8540edf772bae5eaef"
+    },
+    {
+      "scenario": "recording-standalone",
+      "path": "docs/images/recording-standalone.png",
+      "logicalWidth": 984,
+      "logicalHeight": 698,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "894895a966d48e2f14d05e24da2fd59205dc1b20692375fc08bf5368f09a9ad5"
+    },
+    {
+      "scenario": "recording-ijpl",
+      "path": "docs/images/recording-ijpl.png",
+      "logicalWidth": 984,
+      "logicalHeight": 698,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "2a69348a639108b3b3292a63f9952352b5f4bb8c16becadbf04cee1a934bcc92"
     }
   ]
 }

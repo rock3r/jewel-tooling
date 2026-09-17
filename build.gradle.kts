@@ -17,6 +17,7 @@ repositories {
 }
 
 dependencies {
+  implementation(project(":recording"))
   intellijPlatform {
     val localIde = providers.gradleProperty("localIdePath")
     if (localIde.isPresent) local(localIde.get()) else intellijIdea(libs.versions.idea.get())
@@ -85,4 +86,24 @@ detekt { source.from(files("fixtures/ijpl/src/main/kotlin")) }
 tasks.register<Sync>("exportCompilerFixtures") {
   from(compilerFixtures) { rename { "compiler-metadata.jar" } }
   into(layout.projectDirectory.dir("fixtures/standalone/.local"))
+}
+
+val recordingFixtures by configurations.creating {
+  isCanBeConsumed = false
+  isCanBeResolved = true
+}
+
+dependencies {
+  recordingFixtures(project(":recording"))
+  recordingFixtures(project(":recording-compose"))
+}
+
+tasks.named<Sync>("exportCompilerFixtures") {
+  from(recordingFixtures) { rename { it.replace("-${project.version}.jar", ".jar") } }
+}
+
+tasks.register("exportRecordingFixtures") { dependsOn("exportCompilerFixtures") }
+
+tasks.named<Jar>("jar") {
+  from(listOf(rootProject.file("LICENSE"), rootProject.file("NOTICE"))) { into("META-INF") }
 }

@@ -27,7 +27,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Tests, static checks, and distribution verification
-        run: ./gradlew :test :ktfmtCheck :detekt :test-fixtures:compiler-metadata:ktfmtCheck :test-fixtures:compiler-metadata:detekt :e2e:driver-plugin:ktfmtCheck :e2e:driver-plugin:detekt :e2e:runner:ktfmtCheck :e2e:runner:detekt :buildPlugin :verifyPluginStructure :verifyPlugin
+        run: ./gradlew :test :ktfmtCheck :detekt :recording:test :recording:ktfmtCheck :recording:detekt :recording-compose:test :recording-compose:ktfmtCheck :recording-compose:detekt :test-fixtures:compiler-metadata:ktfmtCheck :test-fixtures:compiler-metadata:detekt :e2e:driver-plugin:ktfmtCheck :e2e:driver-plugin:detekt :e2e:runner:ktfmtCheck :e2e:runner:detekt :buildPlugin :verifyPluginStructure :verifyPlugin
       - name: Packaging mutation tests
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Verify production ZIP and recorded Retina assets
@@ -51,6 +51,10 @@ jobs:
           path: |
             build/reports/
             build/test-results/
+            recording/build/reports/
+            recording/build/test-results/
+            recording-compose/build/reports/
+            recording-compose/build/test-results/
           if-no-files-found: warn
   e2e:
     runs-on: ubuntu-latest
@@ -80,7 +84,9 @@ jobs:
           ./gradlew :e2e:driver-plugin:exportFixtureSdk
           python3 scripts/prepare-bazel-fixture.py
       - name: Real Jewel standalone interaction
-        run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./gradlew -p fixtures/standalone test ktfmtCheck detekt
+        run: |
+          xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./gradlew -p fixtures/standalone test ktfmtCheck detekt
+          python3 scripts/verify-trace-markers.py fixtures/standalone/build/classes/kotlin/main
       - name: Real editor assertions with Spectre capture
         run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./gradlew :e2e:runner:test
       - name: E2E evidence

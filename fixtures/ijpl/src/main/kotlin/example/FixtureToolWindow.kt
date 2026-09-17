@@ -11,6 +11,7 @@ import org.jetbrains.jewel.bridge.addComposeTab
 
 class FixtureToolWindow : ToolWindowFactory {
   override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+    FixtureRecording.initialize()
     toolWindow.addComposeTab("Jewel fixture", focusOnClickInside = true) {
       var items by remember { mutableStateOf(listOf("First item")) }
       GreetingRow(Greeting("A Jewel IntelliJ tool window"), items) {

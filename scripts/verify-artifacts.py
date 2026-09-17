@@ -13,24 +13,53 @@ import zipfile
 def verify_zip(path):
     with zipfile.ZipFile(path) as archive:
         files = [name for name in archive.namelist() if not name.endswith("/")]
-        if len(files) != 1 or not re.fullmatch(r"jewel-tooling/lib/jewel-tooling-[0-9][^/]*\.jar", files[0]):
+        plugins = [name for name in files if re.fullmatch(r"jewel-tooling/lib/jewel-tooling-([0-9][^/]*)\.jar", name)]
+        if len(plugins) != 1:
+            raise ValueError("Expected one production plugin JAR")
+        version = re.fullmatch(r"jewel-tooling/lib/jewel-tooling-([0-9][^/]*)\.jar", plugins[0]).group(1)
+        shared = f"jewel-tooling/lib/recording-{version}.jar"
+        if len(files) != 2 or set(files) != {plugins[0], shared}:
             raise ValueError(f"Unexpected distribution entries: {files}")
-        with zipfile.ZipFile(io.BytesIO(archive.read(files[0]))) as jar:
-            names = [name for name in jar.namelist() if not name.endswith("/")]
-            required = {"META-INF/plugin.xml", "messages/JewelToolingBundle.properties"}
-            if not required.issubset(names):
-                raise ValueError("Plugin descriptor or resource bundle missing")
-            for name in names:
-                allowed = (
-                    name in required
-                    or name in {"META-INF/MANIFEST.MF", "META-INF/dev.sebastiano.jewel.tooling_jewel-tooling.kotlin_module", "META-INF/LICENSE", "META-INF/NOTICE"}
-                    or name.startswith("inlayProviders/jewel.compose.stability/")
-                    or (name.startswith("dev/sebastiano/jewel/tooling/") and name.endswith(".class")
-                        and not any(part in name for part in ("/e2e/", "Test", "Fixture", "Scenario")))
-                )
-                if not allowed:
-                    raise ValueError(f"Unexpected production JAR entry: {name}")
+        verify_plugin_jar(archive.read(plugins[0]))
+        verify_recording_jar(archive.read(shared))
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def verify_plugin_jar(data):
+    with zipfile.ZipFile(io.BytesIO(data)) as jar:
+        names = [name for name in jar.namelist() if not name.endswith("/")]
+        required = {"META-INF/plugin.xml", "messages/JewelToolingBundle.properties", "META-INF/LICENSE", "META-INF/NOTICE"}
+        if len(names) != len(set(names)) or not required.issubset(names):
+            raise ValueError("Plugin entries are missing or duplicated")
+        for name in names:
+            allowed = (
+                name in required
+                or name in {"META-INF/MANIFEST.MF", "META-INF/dev.sebastiano.jewel.tooling_jewel-tooling.kotlin_module", "META-INF/LICENSE", "META-INF/NOTICE"}
+                or name.startswith("inlayProviders/jewel.compose.stability/")
+                or (name.startswith("dev/sebastiano/jewel/tooling/") and name.endswith(".class")
+                    and not any(part in name for part in ("/e2e/", "/recording/", "Test", "Fixture", "Scenario")))
+            )
+            if not allowed:
+                raise ValueError(f"Unexpected production JAR entry: {name}")
+
+
+def verify_recording_jar(data):
+    prefix = "dev/sebastiano/jewel/tooling/recording/"
+    classes = {"CaptureFidelity", "CaptureStatus", "CaptureTarget", "CompositionRecorder", "MutableSummary",
+               "Recording", "RecordingCodec", "RecordingError", "RecordingFiles", "RecordingFormatException",
+               "RecordingKt", "RecordingLimits", "SiteSummary", "SiteSummaryKt", "StopReason", "TraceEvent",
+               "TraceSite", "TraceThread"}
+    resources = {"META-INF/MANIFEST.MF", "META-INF/dev.sebastiano.jewel.tooling_recording.kotlin_module",
+                 "META-INF/LICENSE", "META-INF/NOTICE"}
+    with zipfile.ZipFile(io.BytesIO(data)) as jar:
+        names = [name for name in jar.namelist() if not name.endswith("/")]
+        required = {prefix + name + ".class" for name in ("Recording", "RecordingCodec", "CompositionRecorder")} | {"META-INF/LICENSE", "META-INF/NOTICE"}
+        if len(names) != len(set(names)) or not required.issubset(names):
+            raise ValueError("Recording entries are missing or duplicated")
+        for name in names:
+            stem = name.removeprefix(prefix).removesuffix(".class").split("$", 1)[0]
+            if name not in resources and not (name.startswith(prefix) and name.endswith(".class") and stem in classes):
+                raise ValueError(f"Unexpected recording JAR entry: {name}")
 
 
 def source_digest(root, inputs):
@@ -48,18 +77,18 @@ def source_digest(root, inputs):
 
 def capture_inputs(root):
     files = set()
-    directories = ["src/main", "e2e/driver-plugin/src", "e2e/runner/src", "fixtures/standalone/src", "fixtures/ijpl/src", "test-fixtures/compiler-metadata/src"]
+    directories = ["src/main", "e2e/driver-plugin/src", "e2e/runner/src", "fixtures/standalone/src", "fixtures/ijpl/src", "test-fixtures/compiler-metadata/src", "recording/src", "recording-compose/src"]
     for directory in directories:
         for path in (root / directory).rglob("*"):
             if path.is_file():
                 files.add(path.relative_to(root).as_posix())
     files.update([
         "build.gradle.kts", "settings.gradle.kts", "gradle.properties", "config/detekt.yml", "gradle/libs.versions.toml",
-        "e2e/driver-plugin/build.gradle.kts", "e2e/runner/build.gradle.kts", "test-fixtures/compiler-metadata/build.gradle.kts",
+        "recording/build.gradle.kts", "recording-compose/build.gradle.kts", "e2e/driver-plugin/build.gradle.kts", "e2e/runner/build.gradle.kts", "test-fixtures/compiler-metadata/build.gradle.kts",
         "fixtures/standalone/build.gradle.kts", "fixtures/standalone/settings.gradle.kts",
         "fixtures/ijpl/.bazelrc", "fixtures/ijpl/MODULE.bazel.lock", "gradle/wrapper/gradle-wrapper.properties", "gradle/wrapper/gradle-wrapper.jar",
         "fixtures/ijpl/MODULE.bazel", "fixtures/ijpl/BUILD.bazel", "fixtures/ijpl/kotlin.bzl", "fixtures/ijpl/.bazelversion",
-        "scripts/capture-retina.sh", "scripts/promote-captures.py", "scripts/prepare-bazel-fixture.py", "scripts/verify-artifacts.py",
+        "scripts/verify-trace-markers.py", "scripts/capture-retina.sh", "scripts/promote-captures.py", "scripts/prepare-bazel-fixture.py", "scripts/verify-artifacts.py",
     ])
     return sorted(files)
 
@@ -72,7 +101,7 @@ def verify_images(root):
         raise ValueError("Capture input inventory changed; regenerate assets")
     if source_digest(root, manifest["inputs"]) != manifest["sourceSha256"]:
         raise ValueError("Capture inputs changed; regenerate Retina assets in this change")
-    expected = {"standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light"}
+    expected = {"standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light", "recording-standalone", "recording-ijpl"}
     if len(manifest["images"]) != len(expected) or {entry["scenario"] for entry in manifest["images"]} != expected:
         raise ValueError("Missing or unexpected documentation scenario")
     for entry in manifest["images"]:

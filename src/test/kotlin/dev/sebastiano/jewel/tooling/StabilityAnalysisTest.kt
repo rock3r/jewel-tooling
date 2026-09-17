@@ -222,7 +222,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     val source =
       "annotation class Marker; @Marker fun Broken(x: Int) {}; @Marker fun Healthy(x: Int) {}"
     val failing = StabilityInlayProvider { function ->
-      if (function.name == "Broken") throw IllegalStateException("Injected failure")
+      if (function.name == "Broken") error("Injected failure")
       listOf(
         ParameterHint(
           function.valueParameters.single().typeReference!!.textRange.endOffset,
@@ -521,7 +521,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     val result =
       markers(
         StabilityLineMarkerProvider { function ->
-          if (function.name == "Broken") throw IllegalStateException("Intentional fixture failure")
+          if (function.name == "Broken") error("Intentional fixture failure")
           FunctionStability(function.name!!, emptyList())
         }
       )
@@ -602,7 +602,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
         ),
       )
     val panel = StabilityDetailsPanel(report)
-    assertEquals("Unresolved <type> & reason", panel.focus.accessibleContext.accessibleName)
+    assertEquals("<html>Demo", panel.focus.accessibleContext.accessibleName)
     assertTrue("Tab must leave selectable explanation text", panel.focus.focusTraversalKeysEnabled)
     fun texts(component: java.awt.Component): List<String> =
       (when (component) {
@@ -617,6 +617,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
         else emptyList()
     val content = texts(panel.component).joinToString("\n")
     assertTrue(content.contains("<html>Demo"))
+    assertTrue(content.contains("Unresolved <type> & reason"))
     assertTrue(content.contains("Pair<String, String>"))
     assertTrue(content.contains("strong skipping"))
     assertTrue(content.contains("Context parameters are not analyzed"))
@@ -905,6 +906,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
               object : InlayTreeSink {
                 override fun whenOptionEnabled(optionId: String, block: () -> Unit) = block()
 
+                @Suppress("NoNameShadowing")
                 override fun addPresentation(
                   position: InlayPosition,
                   payloads: List<InlayPayload>?,

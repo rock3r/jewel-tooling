@@ -27,6 +27,7 @@ fun main() {
 
 fun showApplication(): ComposeWindow =
   ComposeWindow().apply {
+    FixtureRecording.initialize()
     title = "Jewel Tooling — Standalone fixture"
     defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
     setSize(WINDOW_WIDTH, WINDOW_HEIGHT)

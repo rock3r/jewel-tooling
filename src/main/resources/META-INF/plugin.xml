@@ -5,7 +5,8 @@
   <description><![CDATA[
     Static Compose stability hints for Jewel and Compose UI authors.
     Shows parameter stability estimates and explanations in imported Gradle and Bazel projects.
-    No application instrumentation or build plugin is required.
+    Static hints need no application instrumentation or build plugin.
+    Import saved recordings from explicitly configured development targets.
   ]]></description>
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.java</depends>
@@ -27,6 +28,9 @@
       descriptionKey="hints.description"/>
   </extensions>
   <actions>
+    <action id="JewelTooling.OpenRecording" class="dev.sebastiano.jewel.tooling.OpenRecordingAction">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
     <action id="JewelTooling.ShowStability" class="dev.sebastiano.jewel.tooling.ShowStabilityAction">
       <add-to-group group-id="EditorPopupMenu" anchor="last"/>
     </action>

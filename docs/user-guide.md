@@ -4,7 +4,7 @@ Jewel Tooling shows a static stability estimate beside each parameter of a Kotli
 
 ## Install the plugin
 
-Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.2.0.zip` and restart when prompted.
+Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.3.0.zip` and restart when prompted.
 
 The build targets IntelliJ IDEA 2026.2.0.1 with its bundled Kotlin plugin. This IDE uses K2. There is no upper IDE build limit, so newer IDEs can install the plugin. Only build 262.8665.337 has been validated; newer IDE and Android Studio builds may need API compatibility fixes.
 
@@ -82,19 +82,68 @@ Wait for indexing and Gradle synchronization to finish. Check that `androidx.com
 
 Check the inlay setting and the IDE baseline. An unknown result is useful evidence of an unsupported case; it is not a claim that the type is unstable. Include a small public reproduction when reporting a result you believe is wrong.
 
-## Runtime inspection
+## Inspect a recording
 
-V1 does not collect recomposition events or open a network port. Dynamic inspection is planned separately, beginning with recorded sessions that can be imported after a run. A live connection is optional.
+Choose **Tools → Open Compose Recording**, or find that action with **Find Action**. Select a recording saved by a configured development target.
+
+The report shows the target, session, status, recording window, and any incomplete or rejected events. Click a column heading to sort the sites. Select a site to see its full compiler text and executions by thread. You can select and copy the text. Press **Escape** to close the report.
+
+![A saved Jewel Standalone recording with execution counts and inclusive durations](images/recording-standalone.png)
+
+![A saved IJPL recording from the Bazel fixture](images/recording-ijpl.png)
+
+An execution is a completed pair of Compose trace callbacks. It can be an initial composition or a later call. The callback does not identify which occurred. Total and mean durations include nested calls and capture overhead. They are not frame times.
+
+A site combines the compiler key and its exact text within one session. Matching function names do not prove matching composition instances. Source navigation stays disabled because the recording contains no verified source map.
+
+The report does not show skips, invalidation causes, parameter values, or composition instances. Missing or disabled trace markers can hide activity. An empty recording does not prove that the target did no work.
+
+## Record a development target
+
+The recorder is experimental. The two repository fixtures provide working examples for Gradle and Bazel. The authoring plugin only imports files.
+
+For a quick standalone recording, run these commands from the repository root:
+
+```sh
+./gradlew :e2e:driver-plugin:exportFixtureSdk
+./gradlew -p fixtures/standalone test
+```
+
+Spectre clicks **Add item** in the real Jewel application. The test saves `fixtures/standalone/build/capture/recording.json`. Open that file with **Open Compose Recording**. The graphical test needs the display and capture permissions described below.
+
+For the Bazel/IJPL recording, run the complete end-to-end sequence below. Each IJPL scenario saves `recording.json` inside its artifact directory under `e2e/runner/build/artifacts`.
+
+The bootstrap must own the Compose tracer slot before the target starts its Compose content. Compose provides a setter without a getter. The adapter cannot detect or restore another tracer. Do not install it from an ordinary IDE plugin.
+
+In a controlled standalone application, include the exported `recording.jar` and `recording-compose.jar` from `fixtures/standalone/.local`. Supply Jackson Core 2.19.0. Reuse the application's Compose runtime. The adapter targets the AndroidX runtime 1.11.1 API and requires JVM 21 or newer.
+
+For IJPL, keep the bootstrap in a disposable target that explicitly reserves the tracer slot. The fixture uses the platform's Compose and Jackson libraries. It does not package another runtime. Activity from other compositions in that runtime classloader can also appear.
+
+Install one `OwnedCompositionTracer` with `installOwnedDispatcher()`. Call `startRecording(CaptureTarget(...))` and `stopRecording()` between controlled interactions on the composition thread. Serialize the returned snapshot with `RecordingFiles.writeNew(path, recording)` on a worker thread. The method refuses to overwrite an existing file. The [standalone fixture](../fixtures/standalone/src/main/kotlin/example/FixtureRecording.kt) shows this sequence.
+
+Only one session can be attached at a time. Stop it before starting another, including after truncation. General concurrent restart is unsupported because the callback API has no session token.
+
+## Understand recording limits
+
+A session accepts at most 10,000 starts, 1,024 sites, 64 threads, and a nesting depth of 64. Compiler text is limited to 1 KiB per site. Files are limited to 8 MiB, and the recording window is limited to one hour.
+
+Reaching a limit ends capture and marks the result **Truncated**. The recorder discards unfinished root segments and reports their counts. Later activity is unrecorded; its extent is unknown. Clock failures produce **Failed** recordings. The report preserves completed events from before the failure.
+
+Target, compiler, runtime, and build labels are declarations. They do not prove a build identity. Runtime classloader identity remains unknown. Sessions are not merged.
+
+The importer rejects malformed, incomplete, oversized, and unsupported files. It treats compiler text as plain text, never as paths or commands. Files stay local. No agent, server, or live connection is used.
 
 ## Development and screenshots
 
-Unit and IDE fixture tests run with `./gradlew :test`. That task builds a small dependency with the pinned Compose compiler and loads its JAR into the IDE tests, so metadata tests use real compiler output. The separate IDE Starter runner uses JDK 25. Its test-only plugin inspects real rendered inlays and uses Spectre for device-scale captures. No Spectre code is packaged in the production ZIP.
+Unit and IDE fixture tests run with `./gradlew :test :recording:test :recording-compose:test`. That task builds a small dependency with the pinned Compose compiler and loads its JAR into the IDE tests, so metadata tests use real compiler output. The separate IDE Starter runner uses JDK 25. Its test-only plugin inspects real rendered inlays and uses Spectre for device-scale captures. The production ZIP contains the plugin and shared recording library. It excludes Spectre, the Compose adapter, and Compose or Jackson implementations.
 
 Documentation captures require an unlocked graphical session, screen-capture permission, and a real AWT device transform of 2.0. On macOS, Spectre captures the target window through its native helper, excluding other applications. The capture harness checks native PNG dimensions and never upscales a 1x image. Public Linux CI exercises headed scenarios under Xvfb and verifies committed screenshot hashes and source provenance; it does not claim to regenerate Retina assets.
 
 ## Run the end-to-end tests
 
 The editor tests install the production ZIP and a separate test driver in disposable IDEA instances. IDE Driver and platform actions inspect rendered inlays, edit a property, hover a hint, toggle the provider, click a gutter indicator, and exercise the detail action and Escape dismissal. They also check that an edit dismisses an open detail view. Spectre captures the editor and drives the actual Compose surfaces through their semantics. The production plugin does not depend on the test driver or Spectre.
+
+Both targets import a real recording and check the report. They unload the plugin with the report open, reload it, and import again.
 
 ```sh
 ./gradlew :e2e:driver-plugin:exportFixtureSdk
@@ -113,7 +162,7 @@ Spectre verifies that clicking **Add item** changes the count from one to two.
 
 The IntelliJ fixture runs against the IDE's Compose and Jewel runtime.
 
-To regenerate the seven guide images on a Retina display, run:
+To regenerate the nine guide images on a Retina display, run:
 
 ```sh
 ./scripts/capture-retina.sh

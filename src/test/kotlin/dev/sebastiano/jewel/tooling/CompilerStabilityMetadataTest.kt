@@ -147,6 +147,7 @@ class CompilerStabilityMetadataTest : TestCase() {
   private fun assertUnsupported(bytes: ByteArray, count: Int = 0) =
     assertEquals(CompilerStabilityMetadata.Result.Unsupported, decode(bytes, count))
 
+  @Suppress("LongParameterList")
   private fun shape(
     mask: Int = 1,
     count: Int = 0,

@@ -77,6 +77,10 @@ val fixtureSdk = rootProject.layout.projectDirectory.dir("fixtures/ijpl/.local/s
 
 tasks.register<Sync>("exportFixtureSdk") {
   dependsOn(rootProject.tasks.named("exportCompilerFixtures"))
+  from(rootProject.configurations.named("recordingFixtures")) {
+    into("api")
+    rename { it.replace("-${project.version}.jar", ".jar") }
+  }
   from(rootProject.configurations.named("compilerFixtures")) {
     into("api")
     rename { "compiler-metadata.jar" }

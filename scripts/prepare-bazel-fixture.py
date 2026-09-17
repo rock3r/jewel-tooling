@@ -29,6 +29,7 @@ def main():
         bazel_bin = Path(bazel("info", "bazel-bin"))
         model = json.loads((bazel_bin / "ide-model.json").read_text())
         own_jar = (bazel_bin / "fixture.jar").resolve()
+        subprocess.run(["python3", str(ROOT / "scripts/verify-trace-markers.py"), str(own_jar)], check=True)
         dependencies = [(execution_root / path).resolve(strict=True) for path in model["classpath"]]
         dependencies = sorted(set(path for path in dependencies if path != own_jar))
         if not dependencies:
@@ -78,7 +79,8 @@ def main():
         distribution.mkdir(exist_ok=True)
         with zipfile.ZipFile(distribution / "ijpl-fixture.zip", "w", zipfile.ZIP_DEFLATED) as archive:
             archive.writestr("jewel-fixture/lib/fixture.jar", jar_bytes.getvalue())
-            archive.write(FIXTURE / ".local/sdk/api/compiler-metadata.jar", "jewel-fixture/lib/compiler-metadata.jar")
+            for name in ("compiler-metadata.jar", "recording.jar", "recording-compose.jar"):
+                archive.write(FIXTURE / ".local/sdk/api" / name, "jewel-fixture/lib/" + name)
         print(project)
     finally:
         if (BUILD / "bazel-output/server/server.pid.txt").exists():

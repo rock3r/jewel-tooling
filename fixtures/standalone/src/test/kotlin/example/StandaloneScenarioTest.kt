@@ -24,9 +24,14 @@ class StandaloneScenarioTest {
       automator.waitForNode(tag = "items-count")
       automator.waitForVisualIdle()
       check(automator.findOneByTestTag("items-count")?.text == "Items: 1")
+      SwingUtilities.invokeAndWait { FixtureRecording.start() }
       automator.click(requireNotNull(automator.findOneByTestTag("add-item")))
       automator.waitForVisualIdle()
       check(automator.findOneByTestTag("items-count")?.text == "Items: 2")
+      SwingUtilities.invokeAndWait { FixtureRecording.stop() }
+      val recording = output.resolve("recording.json")
+      Files.deleteIfExists(recording)
+      FixtureRecording.export(recording)
       lateinit var region: Rectangle
       var scaleX = 0.0
       var scaleY = 0.0

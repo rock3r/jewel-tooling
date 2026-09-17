@@ -6,5 +6,6 @@ python3 scripts/promote-captures.py --capture-id "$capture_id" --begin
 ./gradlew :e2e:driver-plugin:exportFixtureSdk
 python3 scripts/prepare-bazel-fixture.py
 ./gradlew -p fixtures/standalone test ktfmtCheck detekt -PcaptureId="$capture_id" -Pretina=true
+python3 scripts/verify-trace-markers.py fixtures/standalone/build/classes/kotlin/main
 ./gradlew :e2e:runner:test --tests '*JewelTargetsTest*' -PcaptureId="$capture_id" -Pretina=true
 python3 scripts/promote-captures.py --capture-id "$capture_id"

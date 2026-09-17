@@ -49,6 +49,7 @@ import javax.swing.text.JTextComponent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jetbrains.plugins.gradle.settings.DistributionType
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.settings.GradleSettings
@@ -61,7 +62,9 @@ class EditorScenarioAction : AnAction() {
   override fun actionPerformed(event: AnActionEvent) {
     val project = requireNotNull(event.project)
     val output = Path.of(System.getProperty("jewel.test.output"))
+    val recording = RecordingScenario(project, event.coroutineScope)
     Files.createDirectories(output)
+    var stage = "startup"
     ApplicationManager.getApplication().executeOnPooledThread {
       try {
         runBlocking {
@@ -125,10 +128,12 @@ class EditorScenarioAction : AnAction() {
               }
               Files.writeString(output.resolve("model-roots.txt"), evidence)
             }
-            await { labels(editor) == expected }
+            stage = "initial inlays"
+            await(stage) { labels(editor) == expected }
             val frame = edt { requireNotNull(WindowManager.getInstance().getFrame(project)) }
             val robot = RobotDriver.synthetic(rootWindow = frame)
-            await {
+            stage = "highlighting completed"
+            await(stage) {
               edt {
                 FileEditorManager.getInstance(project).selectedEditor?.let {
                   DaemonCodeAnalyzerEx.isHighlightingCompleted(it, project)
@@ -190,7 +195,8 @@ class EditorScenarioAction : AnAction() {
                 )
               }
               robot.moveTo(point.x, point.y)
-              await {
+              stage = "hint tooltip"
+              await(stage) {
                 edt {
                   Window.getWindows()
                     .filter { it.isShowing }
@@ -205,6 +211,7 @@ class EditorScenarioAction : AnAction() {
               )
             }
             if (System.getProperty("jewel.test.target") != null) {
+              stage = "stability details"
               DetailsScenario().inspect(robot, editor, project, output)
             }
             edt {
@@ -215,17 +222,20 @@ class EditorScenarioAction : AnAction() {
                 PsiDocumentManager.getInstance(project).commitAllDocuments()
               }
             }
-            await { labels(editor) == (listOf("unstable") + expected.drop(1)) }
+            stage = "inlays after source edit"
+            await(stage) { labels(editor) == (listOf("unstable") + expected.drop(1)) }
             edt {
               DeclarativeInlayHintsSettings.getInstance().setProviderEnabled(PROVIDER, false)
               DeclarativeInlayHintsPassFactory.scheduleRecompute(editor, project)
             }
-            await { labels(editor).isEmpty() }
+            stage = "disabled inlay provider"
+            await(stage) { labels(editor).isEmpty() }
             edt {
               DeclarativeInlayHintsSettings.getInstance().setProviderEnabled(PROVIDER, true)
               DeclarativeInlayHintsPassFactory.scheduleRecompute(editor, project)
             }
-            await { labels(editor) == (listOf("unstable") + expected.drop(1)) }
+            stage = "enabled inlay provider"
+            await(stage) { labels(editor) == (listOf("unstable") + expected.drop(1)) }
             if (System.getProperty("jewel.test.target") == "ijpl") {
               edt {
                 requireNotNull(
@@ -233,13 +243,17 @@ class EditorScenarioAction : AnAction() {
                   )
                   .show()
               }
+              stage = "Jewel tool window interaction"
               val automator = ComposeAutomator.inProcess(robotDriver = robot)
               automator.waitForNode(tag = "items-count")
               automator.waitForVisualIdle()
               check(automator.findOneByTestTag("items-count")?.text == "Items: 1")
+              edt { recording.startTarget() }
               automator.click(requireNotNull(automator.findOneByTestTag("add-item")))
               automator.waitForVisualIdle()
               check(automator.findOneByTestTag("items-count")?.text == "Items: 2")
+              edt { recording.stopTarget() }
+              recording.exportTarget(output.resolve("recording.json"))
               val toolRegion = edt {
                 val component =
                   requireNotNull(
@@ -261,6 +275,16 @@ class EditorScenarioAction : AnAction() {
                 "scaleY":${transform.scaleY}}""",
               )
             }
+            if (System.getProperty("jewel.test.target") != null) {
+              val recordingPath =
+                if (System.getProperty("jewel.test.target") == "ijpl")
+                  output.resolve("recording.json")
+                else Path.of(System.getProperty("jewel.test.recording"))
+              stage = "recording import and Escape"
+              recording.inspect(recordingPath, robot, output)
+              stage = "recording unload and reload"
+              recording.verifyUnloadReload(recordingPath, output)
+            }
             Files.writeString(
               output.resolve("result.txt"),
               "PASS: rendered labels, explanations, edit invalidation, provider toggle, Spectre device-scale capture",
@@ -268,7 +292,10 @@ class EditorScenarioAction : AnAction() {
           }
         }
       } catch (failure: Throwable) {
-        Files.writeString(output.resolve("result.txt"), "FAIL: " + failure.stackTraceToString())
+        Files.writeString(
+          output.resolve("result.txt"),
+          "FAIL: stage=$stage\n" + failure.stackTraceToString(),
+        )
       }
     }
   }
@@ -339,8 +366,15 @@ class EditorScenarioAction : AnAction() {
     }
   }
 
-  private suspend fun await(condition: () -> Boolean) {
-    withTimeout(CONDITION_TIMEOUT_MS) { while (!condition()) delay(POLL_INTERVAL_MS) }
+  private suspend fun await(stage: String, condition: () -> Boolean) {
+    check(
+      withTimeoutOrNull(CONDITION_TIMEOUT_MS) {
+        while (!condition()) delay(POLL_INTERVAL_MS)
+        true
+      } == true
+    ) {
+      "Editor scenario timed out: $stage"
+    }
   }
 
   @Suppress(

@@ -1,8 +1,8 @@
 # Jewel Tooling
 
-A small IntelliJ Platform plugin for **static Compose parameter stability hints**.
+An IntelliJ Platform plugin for **Compose stability hints and saved recordings**.
 Works with Jewel and other Compose Kotlin code in imported **Gradle and Bazel** projects.
-No CSA installation, compiler plugin, application dependency, tracing agent, or server is needed.
+Static hints need no application dependency, agent, or server. Recordings use an explicit development target.
 
 ## Try it
 
@@ -19,7 +19,7 @@ To use an existing compatible IDE distribution instead of downloading one:
 ./gradlew -PlocalIdePath=/path/to/IntelliJIDEA.app/Contents :buildPlugin
 ```
 
-Install `build/distributions/jewel-tooling-0.2.0.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
+Install `build/distributions/jewel-tooling-0.3.0.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
 Open a project, allow indexing to finish, then open a Kotlin file with `@Composable` functions.
 Hints appear after parameter types; hover for a short explanation. Click a function’s gutter indicator
 for a summary and a scrollable explanation of every input, or use **Inspect Compose Stability** in Find Action.
@@ -52,7 +52,7 @@ These are **conservative static estimates**, not compiler reports. Stability alo
 Strong skipping can skip unstable parameters when the relevant object identities are unchanged.
 The compiler metadata reader supports a narrow, tested subset of Kotlin/Compose 2.4.0 JVM output, up to Java 21 class files.
 Other versions and computed initializers stay unknown. The details view shows the evidence behind each result.
-The plugin does not read stability configuration files, infer inherited/custom stability contracts, measure recomposition, or modify source. Do not add `@Stable` just to turn a hint green.
+The plugin does not read stability configuration files, infer inherited/custom stability contracts, or modify source. Do not add `@Stable` just to turn a hint green.
 
 ## Development
 
@@ -62,12 +62,16 @@ A separate fixture module compiles real dependency classes with the pinned Compo
 The implementation keeps Kotlin Analysis API objects inside their analysis session, checks cancellation, and runs through
 IntelliJ's declarative inlay pass rather than doing analysis on the event dispatch thread.
 
-## Later: runtime analysis
+## Inspect a recording
 
-Runtime capture is independent of this plugin's static hints. Start with recorded sessions and file import; a live stream
-is optional for an updating heatmap, not a correctness requirement. A target-side JVM agent could install Compose observers,
-while an application bootstrap could do the same without dynamic attach. A web server is a transport choice, not the collector.
-No runtime agents, ports, telemetry, or instrumentation are included in v1.
+Choose **Tools > Open Compose Recording** to inspect a saved session.
+The report shows observed executions, inclusive duration, threads, and recording limits.
+It does not infer skips, invalidation causes, argument values, or composition instances.
+
+The experimental recorder runs only in explicitly configured development targets.
+Both the Jewel Standalone fixture and the disposable Bazel/IJPL fixture produce real Compose recordings.
+The authoring plugin imports local files. It does not install a tracer in the IDE or open a server.
+See the [recording instructions](docs/user-guide.md#inspect-a-recording) for setup and limits.
 
 ## Inspiration and license
 

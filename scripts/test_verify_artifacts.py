@@ -14,17 +14,29 @@ spec.loader.exec_module(verify)
 
 
 class DistributionTest(unittest.TestCase):
-    def make_zip(self, extra_jar_entry=None, extra_zip_entry=None):
+    def make_zip(self, extra_jar_entry=None, extra_zip_entry=None, shared=True, extra_shared_entry=None):
         jar = io.BytesIO()
         with zipfile.ZipFile(jar, "w") as output:
             output.writestr("META-INF/plugin.xml", "<idea-plugin/>")
+            output.writestr("META-INF/LICENSE", "Apache License, Version 2.0")
+            output.writestr("META-INF/NOTICE", "Jewel Tooling")
             output.writestr("messages/JewelToolingBundle.properties", "hint.stable=stable")
             output.writestr("dev/sebastiano/jewel/tooling/StabilityAnalysis.class", b"fixture")
             if extra_jar_entry:
                 output.writestr(extra_jar_entry, b"unexpected")
+        recording = io.BytesIO()
+        with zipfile.ZipFile(recording, "w") as output:
+            output.writestr("META-INF/LICENSE", "Apache License, Version 2.0")
+            output.writestr("META-INF/NOTICE", "Jewel Tooling")
+            for name in ("Recording", "RecordingCodec", "CompositionRecorder"):
+                output.writestr("dev/sebastiano/jewel/tooling/recording/" + name + ".class", b"fixture")
+            if extra_shared_entry:
+                output.writestr(extra_shared_entry, b"unexpected")
         archive = io.BytesIO()
         with zipfile.ZipFile(archive, "w") as output:
             output.writestr("jewel-tooling/lib/jewel-tooling-0.1.0.jar", jar.getvalue())
+            if shared:
+                output.writestr("jewel-tooling/lib/recording-0.1.0.jar", recording.getvalue())
             if extra_zip_entry:
                 output.writestr(extra_zip_entry, b"unexpected")
         return archive.getvalue()
@@ -43,9 +55,25 @@ class DistributionTest(unittest.TestCase):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 self.verify_bytes(self.make_zip(extra_jar_entry=name))
 
-    def test_second_library_rejected(self):
+    def test_unapproved_library_rejected(self):
         with self.assertRaises(ValueError):
             self.verify_bytes(self.make_zip(extra_zip_entry="jewel-tooling/lib/spectre.jar"))
+
+    def test_missing_shared_library_rejected(self):
+        with self.assertRaises(ValueError):
+            self.verify_bytes(self.make_zip(shared=False))
+
+    def test_duplicate_shared_library_rejected(self):
+        with self.assertWarns(UserWarning):
+            data = self.make_zip(extra_zip_entry="jewel-tooling/lib/recording-0.1.0.jar")
+        with self.assertRaises(ValueError):
+            self.verify_bytes(data)
+
+    def test_adapter_and_foreign_classes_rejected_from_shared_library(self):
+        for name in ("dev/sebastiano/jewel/tooling/recording/OwnedCompositionTracer.class",
+                     "androidx/compose/runtime/Composer.class", "com/fasterxml/jackson/core/JsonFactory.class"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                self.verify_bytes(self.make_zip(extra_shared_entry=name))
 
 
 class ScreenshotProvenanceTest(unittest.TestCase):
@@ -57,7 +85,7 @@ class ScreenshotProvenanceTest(unittest.TestCase):
         images = self.root / "docs/images"
         images.mkdir(parents=True)
         entries = []
-        for scenario in ["standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light"]:
+        for scenario in ["standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light", "recording-standalone", "recording-ijpl"]:
             data = b"\x89PNG\r\n\x1a\n" + b"\0" * 8 + struct.pack(">II", 200, 100)
             relative = "docs/images/" + scenario + ".png"
             (self.root / relative).write_bytes(data)

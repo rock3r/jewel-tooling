@@ -60,6 +60,8 @@ def main():
         ("ijpl-editor", selected["ijpl"], "editor-before.png", "capture.json"),
         ("ijpl-ui", selected["ijpl"], "ijpl-ui.png", "ijpl-capture.json"),
         ("standalone-ui", standalone, "standalone-ui.png", "capture.json"),
+        ("recording-standalone", selected["standalone"], "recording.png", "recording-capture.json"),
+        ("recording-ijpl", selected["ijpl"], "recording.png", "recording-capture.json"),
     ]
     images = []
     pending = []
@@ -79,7 +81,7 @@ def main():
         shutil.copyfile(source, target)
     (destination / "manifest.json").write_text(json.dumps({"schemaVersion": 1, "captureId": args.capture_id, "inputs": inputs, "sourceSha256": digest, "images": images}, indent=2) + "\n")
     verify.verify_images(ROOT)
-    print("Promoted seven verified native Retina captures")
+    print("Promoted nine verified native Retina captures")
 
 
 if __name__ == "__main__":
