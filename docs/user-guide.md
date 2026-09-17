@@ -4,7 +4,7 @@ Jewel Tooling shows a static stability estimate beside each parameter of a Kotli
 
 ## Install the plugin
 
-Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.3.1.zip` and restart when prompted.
+Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.3.2.zip` and restart when prompted.
 
 The build targets IntelliJ IDEA 2026.2.0.1 with its bundled Kotlin plugin. This IDE uses K2. There is no upper IDE build limit, so newer IDEs can install the plugin. Only build 262.8665.337 has been validated; newer IDE and Android Studio builds may need API compatibility fixes.
 
@@ -98,6 +98,10 @@ The report shows the target, session, status, recording window, and any incomple
 ![A saved Jewel Standalone recording with execution counts and inclusive durations](images/recording-standalone.png)
 
 ![A saved IJPL recording from the Bazel fixture](images/recording-ijpl.png)
+
+Use **Filter sites** to find text in the full compiler trace description. Matching ignores case and treats punctuation and spaces literally.
+For example, enter `example.GreetingRow` to find that call site. Choose **Clear** to restore all rows.
+The result count shows visible sites out of all recorded sites. Filtering does not change session totals or per-site measurements.
 
 An execution is a completed pair of Compose trace callbacks. It can be an initial composition or a later call. The callback does not identify which occurred. Total and mean durations include nested calls and capture overhead. They are not frame times.
 

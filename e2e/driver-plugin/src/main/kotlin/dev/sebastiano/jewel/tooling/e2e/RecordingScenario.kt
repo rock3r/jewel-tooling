@@ -16,8 +16,10 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import javax.imageio.ImageIO
+import javax.swing.JButton
 import javax.swing.JDialog
 import javax.swing.JTable
+import javax.swing.JTextField
 import javax.swing.text.JTextComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -91,6 +93,21 @@ internal class RecordingScenario(private val project: Project, private val scope
       "executions=$executions; sites=${table.rowCount}; pluginLoader=$loaderName\n$text"
     }
     Files.writeString(output.resolve("recording-evidence.txt"), evidence)
+    val totalSites = edt {
+      val children = descendants(window)
+      val table = children.filterIsInstance<JTable>().single { it.name == "jewel-recording-sites" }
+      val total = table.rowCount
+      children.filterIsInstance<JTextField>().single { it.name == "jewel-recording-filter" }.text =
+        "example.GreetingRow"
+      check(table.rowCount == 1)
+      check(table.getValueAt(0, 0).toString().contains("example.GreetingRow"))
+      check(
+        children.filterIsInstance<JTextComponent>().any {
+          it.text.startsWith("example.GreetingRow") && it.text.contains("Session site")
+        }
+      )
+      total
+    }
     delay(PAINT_SETTLE_MS)
     val region = edt {
       check(window.height <= MAX_REPORT_HEIGHT) {
@@ -108,6 +125,27 @@ internal class RecordingScenario(private val project: Project, private val scope
       """{"captureId":"${System.getProperty("jewel.test.captureId", "development")}",
         "logicalWidth":${region.width},"logicalHeight":${region.height},
         "scaleX":${transform.scaleX},"scaleY":${transform.scaleY}}""",
+    )
+    val clear = edt {
+      descendants(window).filterIsInstance<JButton>().single {
+        it.name == "jewel-recording-filter-clear"
+      }
+    }
+    val point = edt {
+      clear.locationOnScreen.apply { translate(clear.width / 2, clear.height / 2) }
+    }
+    robot.click(point.x, point.y)
+    await("filter cleared") {
+      edt {
+        descendants(window)
+          .filterIsInstance<JTable>()
+          .single { it.name == "jewel-recording-sites" }
+          .rowCount == totalSites
+      }
+    }
+    Files.writeString(
+      output.resolve("recording-filter.txt"),
+      "PASS: literal filter and Clear restored $totalSites sites",
     )
     for (id in listOf(KeyEvent.KEY_PRESSED, KeyEvent.KEY_RELEASED)) {
       java.awt.Toolkit.getDefaultToolkit()

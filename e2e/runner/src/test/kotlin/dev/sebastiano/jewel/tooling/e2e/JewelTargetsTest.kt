@@ -117,6 +117,7 @@ class JewelTargetsTest {
       check(Files.size(output.resolve("recording-evidence.txt")) > 0)
       check(Files.readString(output.resolve("recording-lifecycle.txt")).startsWith("PASS:"))
       check(Files.readString(output.resolve("navigation.txt")).startsWith("PASS:"))
+      check(Files.readString(output.resolve("recording-filter.txt")).startsWith("PASS:"))
       if (target == "standalone") {
         check(Files.size(output.resolve("explanation.png")) > 0)
         check(Files.size(output.resolve("details-dark.png")) > 0)

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "captureId": "navigation-final-20260917-a",
+  "captureId": "filter-final-20260917-b",
   "inputs": [
     "build.gradle.kts",
     "config/detekt.yml",
@@ -72,7 +72,7 @@
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "e41d71133b60eab894a606c1413c7d5c2e813959b30a145b292b78fcefd80310",
+  "sourceSha256": "1a06ee6f4ad273840553ed026745dcbfc081a9549ab1d48f5212086049ad4bd6",
   "images": [
     {
       "scenario": "standalone-editor",
@@ -81,7 +81,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "fdb12f2088e8839951bbc412596d06dc060655a5b6fb0e6778ca8b16ed288bd6"
+      "sha256": "c87eba4aa0147b9d8a65ab3428d288bdfd901a1d4d8fcee72d50ec00339713c0"
     },
     {
       "scenario": "explanation",
@@ -90,7 +90,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "115a1ec4145c73ee422fde0f954f3d400fb29d003f89aa65c1f00709c3597d05"
+      "sha256": "7c5a5307841e771add81984807f06b223f8a793aa80abaca06786f77e6c86a1d"
     },
     {
       "scenario": "details-dark",
@@ -117,7 +117,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "fdb12f2088e8839951bbc412596d06dc060655a5b6fb0e6778ca8b16ed288bd6"
+      "sha256": "33cbddd198ebc6deca0fda9c3e9e83c81df1d6a9fb731504ebfa7491ba8f34ef"
     },
     {
       "scenario": "ijpl-ui",
@@ -144,7 +144,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "379e2dbdaacfc685199317f4e826479ea27212c9dc69d5374b487edd974f980a"
+      "sha256": "5497557cbe5c62307718dc2d61bd053c7bcb68dac5a75ed3ba8043714f4ec333"
     },
     {
       "scenario": "recording-ijpl",
@@ -153,7 +153,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "25810ec62844069eae5de23ed12f72519644e39d2b7f094f7d4eb1684d94578d"
+      "sha256": "87ef7ce519d2418727731529f75d81c7361f26fab4fa2b1b233370e60384ab33"
     }
   ]
 }

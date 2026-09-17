@@ -1,7 +1,9 @@
 package dev.sebastiano.jewel.tooling
 
+import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
@@ -10,24 +12,38 @@ import dev.sebastiano.jewel.tooling.recording.SiteSummary
 import java.awt.BorderLayout
 import java.text.NumberFormat
 import java.util.Locale
+import javax.swing.JButton
 import javax.swing.JComponent
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JSplitPane
 import javax.swing.ListSelectionModel
+import javax.swing.RowFilter
+import javax.swing.event.DocumentEvent
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
+import javax.swing.table.TableRowSorter
 import javax.swing.text.DefaultCaret
 
 private const val NANOS_PER_MILLISECOND = 1_000_000.0
 
 internal class RecordingReportPanel(private val data: RecordingReportData) {
   private val details = textArea("recording.site.details")
+  private val model = SitesModel(data.sites)
+  private val sorter = TableRowSorter(model)
+  private val filter =
+    JBTextField().apply {
+      name = "jewel-recording-filter"
+      accessibleContext.accessibleName = JewelToolingBundle.message("recording.filter.accessible")
+    }
+  private val count = JLabel().apply { putClientProperty("html.disable", true) }
+  private var filtering = false
   private val table =
-    JBTable(SitesModel(data.sites)).apply {
+    JBTable(model).apply {
       name = "jewel-recording-sites"
       accessibleContext.accessibleName = JewelToolingBundle.message("recording.sites")
       setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
-      autoCreateRowSorter = true
+      rowSorter = sorter
       columnModel.getColumn(1).preferredWidth = 100
       columnModel.getColumn(2).preferredWidth = 170
       columnModel.getColumn(3).preferredWidth = 170
@@ -45,7 +61,9 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
           }
         },
       )
-      selectionModel.addListSelectionListener { if (!it.valueIsAdjusting) showSelection() }
+      selectionModel.addListSelectionListener {
+        if (!it.valueIsAdjusting && !filtering) showSelection()
+      }
     }
 
   val component: JComponent =
@@ -63,10 +81,17 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
         BorderLayout.NORTH,
       )
       add(
-        JSplitPane(JSplitPane.VERTICAL_SPLIT, JBScrollPane(table), JBScrollPane(details)).apply {
-          resizeWeight = 0.7
-          dividerLocation = JBUI.scale(290)
-          border = null
+        JPanel(BorderLayout(0, JBUI.scale(FILTER_GAP))).apply {
+          add(filterBar(), BorderLayout.NORTH)
+          add(
+            JSplitPane(JSplitPane.VERTICAL_SPLIT, JBScrollPane(table), JBScrollPane(details))
+              .apply {
+                resizeWeight = 0.7
+                dividerLocation = JBUI.scale(220)
+                border = null
+              },
+            BorderLayout.CENTER,
+          )
         },
         BorderLayout.CENTER,
       )
@@ -86,16 +111,83 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
     }
 
   val focus: JComponent
-    get() = table
+    get() = filter
 
   init {
-    if (data.sites.isNotEmpty()) table.setRowSelectionInterval(0, 0)
-    else details.text = JewelToolingBundle.message("recording.empty")
+    filter.document.addDocumentListener(
+      object : DocumentAdapter() {
+        override fun textChanged(event: DocumentEvent) = applyFilter()
+      }
+    )
+    applyFilter()
+  }
+
+  private fun filterBar(): JComponent =
+    JPanel(BorderLayout(JBUI.scale(FILTER_GAP), 0)).apply {
+      isOpaque = false
+      add(
+        JLabel(JewelToolingBundle.message("recording.filter")).apply {
+          labelFor = filter
+          putClientProperty("html.disable", true)
+        },
+        BorderLayout.WEST,
+      )
+      add(filter, BorderLayout.CENTER)
+      add(
+        JPanel(BorderLayout(JBUI.scale(FILTER_GAP), 0)).apply {
+          isOpaque = false
+          add(
+            JButton(JewelToolingBundle.message("recording.filter.clear")).apply {
+              name = "jewel-recording-filter-clear"
+              putClientProperty("html.disable", true)
+              addActionListener {
+                filter.text = ""
+                filter.requestFocusInWindow()
+              }
+            },
+            BorderLayout.WEST,
+          )
+          add(count, BorderLayout.CENTER)
+        },
+        BorderLayout.EAST,
+      )
+    }
+
+  private fun applyFilter() {
+    val selected = table.selectedRow.takeIf { it >= 0 }?.let { table.convertRowIndexToModel(it) }
+    val query = filter.text.lowercase(Locale.ROOT)
+    filtering = true
+    try {
+      sorter.rowFilter =
+        if (query.isEmpty()) null
+        else
+          object : RowFilter<SitesModel, Int>() {
+            override fun include(entry: Entry<out SitesModel, out Int>): Boolean =
+              model.matches(entry.identifier, query)
+          }
+      val visible = selected?.let { table.convertRowIndexToView(it) } ?: -1
+      if (visible >= 0) table.setRowSelectionInterval(visible, visible)
+      else if (table.rowCount > 0) table.setRowSelectionInterval(0, 0) else table.clearSelection()
+    } finally {
+      filtering = false
+    }
+    count.text =
+      JewelToolingBundle.message("recording.filter.count", table.rowCount, model.rowCount)
+    showSelection()
   }
 
   private fun showSelection() {
     val row = table.selectedRow
-    if (row < 0) return
+    if (row < 0) {
+      details.text =
+        if (table.rowCount == 0)
+          JewelToolingBundle.message(
+            if (data.sites.isEmpty() && filter.text.isEmpty()) "recording.empty"
+            else "recording.filter.empty"
+          )
+        else ""
+      return
+    }
     val site = data.sites[table.convertRowIndexToModel(row)]
     val labels = data.recording.threads.associate { it.id to it.name }
     details.text = buildString {
@@ -151,6 +243,7 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
   }
 
   companion object {
+    private const val FILTER_GAP = 8
     private const val MIN_TEXT_WIDTH = 80
     private const val MIN_TEXT_HEIGHT = 40
 
@@ -170,6 +263,10 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
 }
 
 private class SitesModel(private val sites: List<SiteSummary>) : AbstractTableModel() {
+  private val normalized = sites.map { it.site.info.lowercase(Locale.ROOT) }
+
+  fun matches(row: Int, query: String): Boolean = normalized[row].contains(query)
+
   private val columns =
     listOf(
       "recording.column.site",
