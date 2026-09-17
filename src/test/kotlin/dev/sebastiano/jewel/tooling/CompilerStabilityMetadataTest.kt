@@ -2,16 +2,28 @@ package dev.sebastiano.jewel.tooling
 
 import java.util.zip.ZipFile
 import junit.framework.TestCase
+import org.jetbrains.org.objectweb.asm.AnnotationVisitor
+import org.jetbrains.org.objectweb.asm.ClassReader
+import org.jetbrains.org.objectweb.asm.ClassVisitor
 import org.jetbrains.org.objectweb.asm.ClassWriter
 import org.jetbrains.org.objectweb.asm.MethodVisitor
 import org.jetbrains.org.objectweb.asm.Opcodes
 
 class CompilerStabilityMetadataTest : TestCase() {
-  fun testActualCompilerOutput() {
+  fun testActualCompilerOutput() = checkCompilerOutput("evidence", 65, intArrayOf(2, 4, 0))
+
+  fun testStandaloneCompilerOutput() =
+    checkCompilerOutput("standaloneevidence", 69, intArrayOf(2, 3, 0))
+
+  fun testPlatformCompilerOutput() =
+    checkCompilerOutput("platformevidence", 69, intArrayOf(2, 4, 0))
+
+  private fun checkCompilerOutput(packageName: String, classVersion: Int, metadata: IntArray) {
     ZipFile(System.getProperty("jewel.tooling.compilerFixtures")).use { jar ->
       fun result(name: String, count: Int = 0): CompilerStabilityMetadata.Result {
-        val internal = "evidence/$name"
+        val internal = "$packageName/$name"
         val bytes = jar.getInputStream(jar.getEntry("$internal.class")).use { it.readBytes() }
+        assertCompilerVersions(bytes, classVersion, metadata)
         return CompilerStabilityMetadata.decode(bytes, internal, count)
       }
       assertEquals(CompilerStabilityMetadata.Result.Proven(false, 0), result("Stable"))
@@ -62,9 +74,33 @@ class CompilerStabilityMetadataTest : TestCase() {
   }
 
   fun testVersionIdentityAndClassShape() {
-    assertUnsupported(shape(version = 66))
+    for (version in 52..69) {
+      assertEquals(
+        CompilerStabilityMetadata.Result.Proven(false, 0),
+        decode(shape(version = version)),
+      )
+    }
+    assertUnsupported(shape(version = 51))
+    assertUnsupported(shape(version = 70))
+    assertUnsupported(shape(version = (0xffff shl 16) or 69))
+    assertUnsupported(shape(version = (1 shl 16) or 69))
     assertEquals(CompilerStabilityMetadata.Result.Proven(false, 0), decode(shape(version = 65)))
-    assertUnsupported(shape(metadataVersion = intArrayOf(2, 3, 0)))
+    assertEquals(
+      CompilerStabilityMetadata.Result.Proven(false, 0),
+      decode(shape(metadataVersion = intArrayOf(2, 3, 0))),
+    )
+    for (metadata in
+      listOf(
+        intArrayOf(1, 9, 0),
+        intArrayOf(2, 2, 0),
+        intArrayOf(2, 5, 0),
+        intArrayOf(2, 3, 1),
+        intArrayOf(2, 4, 1),
+        intArrayOf(2, 4),
+        intArrayOf(2, 4, 0, 0),
+      )) {
+      assertUnsupported(shape(metadataVersion = metadata))
+    }
     assertEquals(
       CompilerStabilityMetadata.Result.Unsupported,
       CompilerStabilityMetadata.decode(shape(), "other/Class", 0),
@@ -139,6 +175,43 @@ class CompilerStabilityMetadataTest : TestCase() {
         throw AssertionError("Malformed class byte at offset $index escaped the decoder", failure)
       }
     }
+  }
+
+  private fun assertCompilerVersions(
+    bytes: ByteArray,
+    expectedClass: Int,
+    expectedMetadata: IntArray,
+  ) {
+    var metadataSeen = false
+    ClassReader(bytes)
+      .accept(
+        object : ClassVisitor(Opcodes.ASM9) {
+          override fun visit(
+            version: Int,
+            access: Int,
+            name: String,
+            signature: String?,
+            superName: String?,
+            interfaces: Array<out String>?,
+          ) {
+            assertEquals(expectedClass, version)
+          }
+
+          override fun visitAnnotation(descriptor: String, visible: Boolean): AnnotationVisitor? {
+            if (descriptor != "Lkotlin/Metadata;") return null
+            return object : AnnotationVisitor(Opcodes.ASM9) {
+              override fun visit(name: String?, value: Any?) {
+                if (name == "mv") {
+                  assertTrue(expectedMetadata.contentEquals(value as IntArray))
+                  metadataSeen = true
+                }
+              }
+            }
+          }
+        },
+        ClassReader.SKIP_CODE,
+      )
+    assertTrue("The compiler must emit the expected Kotlin metadata", metadataSeen)
   }
 
   private fun decode(bytes: ByteArray, count: Int = 0) =

@@ -13,13 +13,13 @@ import org.jetbrains.org.objectweb.asm.tree.IntInsnNode
 import org.jetbrains.org.objectweb.asm.tree.LdcInsnNode
 import org.jetbrains.org.objectweb.asm.tree.MethodNode
 
-/** Decodes a deliberately small, verified subset of Kotlin/Compose 2.4.0 JVM output. */
+/** Decodes supported Kotlin 2.3 and 2.4 stability metadata in Java 8 through 25 class files. */
 internal object CompilerStabilityMetadata {
   const val MAX_BYTES = 1024 * 1024
   private const val MAX_PARAMETERS = 30
-  private const val KOTLIN_METADATA_MINOR = 4
+  private val SUPPORTED_METADATA_VERSIONS = listOf(intArrayOf(2, 3, 0), intArrayOf(2, 4, 0))
   private const val MIN_CLASS_VERSION = 52
-  private const val MAX_CLASS_VERSION = 65
+  private const val MAX_CLASS_VERSION = 69
   private const val MAX_SIGNATURE_LENGTH = 4096
   private const val MAX_SIGNATURE_NESTING = 64
   private const val UNSTABLE_VALUE = 8
@@ -196,7 +196,7 @@ internal object CompilerStabilityMetadata {
       requireShape(
         metadataCount == 1 &&
           metadataKind == 1 &&
-          metadataVersion?.contentEquals(intArrayOf(2, KOTLIN_METADATA_MINOR, 0)) == true
+          SUPPORTED_METADATA_VERSIONS.any { metadataVersion?.contentEquals(it) == true }
       )
       requireShape(inferredCount == 1 && fieldCount == 1)
       val m = mask ?: throw UnsupportedShape()

@@ -20,7 +20,7 @@ class Greeting(val title: String)
 fun GreetingRow(
   greeting: Greeting,
   items: List<String>,
-  compiledGreeting: evidence.Stable = evidence.Stable("Compiler metadata"),
+  compiledGreeting: standaloneevidence.Stable = standaloneevidence.Stable("Compiler metadata"),
   metadata: Pair<String, String> = "Jewel" to "Compose",
   onIncrement: () -> Unit,
 ) {

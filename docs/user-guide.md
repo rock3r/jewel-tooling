@@ -4,7 +4,7 @@ Jewel Tooling shows a static stability estimate beside each parameter of a Kotli
 
 ## Install the plugin
 
-Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.3.2.zip` and restart when prompted.
+Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.3.3.zip` and restart when prompted.
 
 The build targets IntelliJ IDEA 2026.2.0.1 with its bundled Kotlin plugin. This IDE uses K2. There is no upper IDE build limit, so newer IDEs can install the plugin. Only build 262.8665.337 has been validated; newer IDE and Android Studio builds may need API compatibility fixes.
 
@@ -63,7 +63,21 @@ Counts include value parameters and an extension receiver, when present. Context
 
 For a resolved binary dependency, the plugin can read the class’s existing Compose stability metadata. It reads the class file without loading or executing it. You do not need to add a plugin or dependency to the project being inspected.
 
-Support is deliberately narrow: the current reader is tested with Kotlin and Compose compiler **2.4.0**, Kotlin metadata `[2, 4, 0]`, and JVM class files up to Java 21. Older compiler metadata, newer class-file versions, computed stability initializers, and other unsupported shapes stay **unknown**. This does not provide general coverage of published Jewel or Compose libraries.
+The reader accepts Kotlin metadata `[2, 3, 0]` and `[2, 4, 0]` in Java 8–25 class files. It rejects preview class files.
+
+The tests compile real dependencies with these configurations:
+
+| Kotlin and Compose compiler | JVM target | Purpose |
+| --- | --- | --- |
+| 2.3.20 | 25 | Jewel Standalone compiler configuration |
+| 2.4.20-RC3 | 25 | IntelliJ Platform compiler configuration |
+| 2.4.0 | 21 | Previous supported configuration |
+
+These versions describe the compiled dependencies, not the IDE runtime. Running on JBR 25 does not require every dependency to target Java 25.
+The plugin keeps its Java 21 bytecode target. Source analysis does not depend on the binary metadata reader.
+
+A metadata version does not identify the compiler patch version. Computed stability initializers and other unsupported shapes stay **unknown**.
+Other metadata versions and class files newer than Java 25 also stay **unknown**. This does not provide general coverage of published Jewel or Compose libraries.
 
 For generic classes, the metadata identifies which type arguments matter. For example, a compiled `Box<T>(val value: T)` combines the compiler’s class result with the analysis of `T`. A star projection stays unknown when that argument is required. An unused type argument does not affect the result. The details view labels compiler and source evidence separately when both contribute.
 

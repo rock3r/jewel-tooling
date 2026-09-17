@@ -42,7 +42,13 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     val stdlib = File(System.getProperty("jewel.tooling.stdlib"))
     PsiTestUtil.addLibrary(module, "kotlin-stdlib", stdlib.parent, stdlib.name)
     val binaryFixtures = File(System.getProperty("jewel.tooling.compilerFixtures"))
-    PsiTestUtil.addLibrary(module, "compiler-fixtures", binaryFixtures.parent, binaryFixtures.name)
+    val fixtureCopy =
+      com.intellij.openapi.util.io.FileUtil.createTempFile("compiler-fixtures", ".jar", true)
+    com.intellij.openapi.util.Disposer.register(testRootDisposable) {
+      com.intellij.openapi.util.io.FileUtil.delete(fixtureCopy)
+    }
+    fixtureCopy.writeBytes(binaryFixtures.readBytes())
+    PsiTestUtil.addLibrary(module, "compiler-fixtures", fixtureCopy.parent, fixtureCopy.name)
     myFixture.addFileToProject(
       "androidx/compose/runtime/Annotations.kt",
       """
@@ -801,6 +807,34 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
           declaration.containingKtFile.isCompiled,
         )
       }
+    }
+  }
+
+  fun testJava25CompilerMetadataInAnalysis() {
+    for (packageName in listOf("standaloneevidence", "platformevidence")) {
+      val results =
+        hints(
+            """
+        import androidx.compose.runtime.Composable
+        import $packageName.*
+        @Composable fun Demo(a: Stable, b: Mutable, c: Used<String>, d: Used<List<String>>, e: WithInitializer) {}
+      """
+          )
+          .map { it.assessment }
+      assertEquals(
+        "$packageName: $results",
+        listOf(
+          Stability.STABLE,
+          Stability.UNSTABLE,
+          Stability.STABLE,
+          Stability.UNSTABLE,
+          Stability.UNKNOWN,
+        ),
+        results.map { it.stability },
+      )
+      assertEquals(setOf(Evidence.COMPILER_METADATA), results[0].evidence)
+      assertEquals(setOf(Evidence.COMPILER_METADATA), results[1].evidence)
+      assertEquals(setOf(Evidence.COMPILER_METADATA, Evidence.BUILTIN), results[2].evidence)
     }
   }
 

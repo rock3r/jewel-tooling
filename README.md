@@ -19,7 +19,7 @@ To use an existing compatible IDE distribution instead of downloading one:
 ./gradlew -PlocalIdePath=/path/to/IntelliJIDEA.app/Contents :buildPlugin
 ```
 
-Install `build/distributions/jewel-tooling-0.3.2.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
+Install `build/distributions/jewel-tooling-0.3.3.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
 Open a project, allow indexing to finish, then open a Kotlin file with `@Composable` functions.
 Hints appear after parameter types; hover for a short explanation. Click a function’s gutter indicator
 for a summary and a scrollable explanation of every input, or use **Inspect Compose Stability** in Find Action.
@@ -50,7 +50,8 @@ Read the [user guide](docs/user-guide.md) for explanations, limits, screenshots,
 
 These are **conservative static estimates**, not compiler reports. Stability alone does not determine skipping.
 Strong skipping can skip unstable parameters when the relevant object identities are unchanged.
-The compiler metadata reader supports a narrow, tested subset of Kotlin/Compose 2.4.0 JVM output, up to Java 21 class files.
+The compiler metadata reader supports a tested subset of Kotlin metadata `[2, 3, 0]` and `[2, 4, 0]` in Java 8–25 class files.
+The compiler tests cover Kotlin/Compose 2.3.20 and 2.4.20-RC3 targeting Java 25, plus 2.4.0 targeting Java 21.
 Other versions and computed initializers stay unknown. The details view shows the evidence behind each result.
 The plugin does not read stability configuration files, infer inherited/custom stability contracts, or modify source. Do not add `@Stable` just to turn a hint green.
 

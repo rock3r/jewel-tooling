@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "captureId": "filter-final-20260917-b",
+  "captureId": "platform-metadata-20260917-a",
   "inputs": [
     "build.gradle.kts",
     "config/detekt.yml",
@@ -72,7 +72,7 @@
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "1a06ee6f4ad273840553ed026745dcbfc081a9549ab1d48f5212086049ad4bd6",
+  "sourceSha256": "ae55c7c28377d8036d40f34e729ee83ab24eb3316ecfd613cf4e2e1fa179f31f",
   "images": [
     {
       "scenario": "standalone-editor",
@@ -81,7 +81,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "c87eba4aa0147b9d8a65ab3428d288bdfd901a1d4d8fcee72d50ec00339713c0"
+      "sha256": "36b9cdce83ee8d21bb373b3da82ed64594470b1705fe3b871b0d56227e1a7e05"
     },
     {
       "scenario": "explanation",
@@ -90,7 +90,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "7c5a5307841e771add81984807f06b223f8a793aa80abaca06786f77e6c86a1d"
+      "sha256": "5fda985d052a5368416c08cf56b9de4e8d9777e770671c46124b19cc5d9435d0"
     },
     {
       "scenario": "details-dark",
@@ -99,7 +99,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "6d4724386a37f08a13b8d7b2c27f5c22cbbbf84af0622a1f79b776a468ea0081"
+      "sha256": "a860d910c7f78fb0ea13f6a1716d17294354ec6deac29c9a402fa053dc3838a1"
     },
     {
       "scenario": "details-light",
@@ -108,7 +108,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "7dde70cd7a7a35ce540bd306532980e67d6aaca5af7c33f932a6205894672b86"
+      "sha256": "f734d94ef718990b2cc6aa99fc7cbd57e4d4ec4f02f28e83ab11310adaaa1d12"
     },
     {
       "scenario": "ijpl-editor",
@@ -117,7 +117,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "33cbddd198ebc6deca0fda9c3e9e83c81df1d6a9fb731504ebfa7491ba8f34ef"
+      "sha256": "fa8ee6a1f74472ce898e6b313c3037f608f9d72ded6622cbc5b40441381263b8"
     },
     {
       "scenario": "ijpl-ui",
@@ -144,7 +144,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "5497557cbe5c62307718dc2d61bd053c7bcb68dac5a75ed3ba8043714f4ec333"
+      "sha256": "d20dfca9cf31bfaa5683f80acaa8ee6c6be4e6ad68f5c835234b15e1f5cba169"
     },
     {
       "scenario": "recording-ijpl",
@@ -153,7 +153,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "87ef7ce519d2418727731529f75d81c7361f26fab4fa2b1b233370e60384ab33"
+      "sha256": "813ff582fd2f41faf2e65c042832aa22335532ca0ab61e36e34f365bc044e5e5"
     }
   ]
 }
