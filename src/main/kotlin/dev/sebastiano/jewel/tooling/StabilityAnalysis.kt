@@ -2,6 +2,7 @@ package dev.sebastiano.jewel.tooling
 
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.progress.ProgressManager
+import com.intellij.psi.SmartPsiElementPointer
 import org.jetbrains.kotlin.analysis.api.KaSession
 import org.jetbrains.kotlin.analysis.api.analyze
 import org.jetbrains.kotlin.analysis.api.components.declaredMemberScope
@@ -22,6 +23,7 @@ import org.jetbrains.kotlin.analysis.api.types.KaType
 import org.jetbrains.kotlin.analysis.api.types.KaTypeParameterType
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtProperty
 
@@ -43,7 +45,17 @@ internal data class StabilityAssessment(
   val stability: Stability,
   val reason: String,
   val evidence: Set<Evidence> = emptySet(),
-)
+  val sourceTarget: SmartPsiElementPointer<KtNamedDeclaration>? = null,
+) {
+  override fun equals(other: Any?): Boolean =
+    other is StabilityAssessment &&
+      stability == other.stability &&
+      reason == other.reason &&
+      evidence == other.evidence
+
+  override fun hashCode(): Int =
+    31 * (31 * stability.hashCode() + reason.hashCode()) + evidence.hashCode()
+}
 
 internal data class ParameterHint(
   val offset: Int,
@@ -54,19 +66,25 @@ internal data class ParameterHint(
 
 internal data class FunctionStability(val name: String, val parameters: List<ParameterHint>)
 
-/** Analysis symbols stay inside analyze; only immutable presentation data escapes. */
+/**
+ * Analysis symbols stay inside analyze; only presentation data and optional source pointers escape.
+ */
 internal object StabilityAnalysis {
   fun hints(function: KtNamedFunction, visitLimit: Int = 256): List<ParameterHint> =
     inspect(function, visitLimit)?.parameters.orEmpty()
 
-  fun inspect(function: KtNamedFunction, visitLimit: Int = 256): FunctionStability? =
+  fun inspect(
+    function: KtNamedFunction,
+    visitLimit: Int = 256,
+    navigation: Boolean = false,
+  ): FunctionStability? =
     analyze(function) {
       val symbol = function.symbol as? KaNamedFunctionSymbol ?: return@analyze null
       if (symbol.annotations.none { it.classId?.asFqNameString() == COMPOSABLE })
         return@analyze null
       if (function.valueParameters.size != symbol.valueParameters.size) return@analyze null
       val hints = mutableListOf<ParameterHint>()
-      val budget = VisitBudget(visitLimit)
+      val budget = VisitBudget(visitLimit, navigation)
       val receiver = function.receiverTypeReference
       if (receiver != null) {
         hints +=
@@ -203,12 +221,15 @@ internal object StabilityAnalysis {
         ProgressManager.checkCanceled()
         val psi = property.psi as? KtProperty
         if (psi?.hasDelegate() == true) {
-          unknown = assessment(Stability.UNKNOWN, "reason.delegated", property.name.asString())
+          unknown =
+            assessment(Stability.UNKNOWN, "reason.delegated", property.name.asString())
+              .copy(sourceTarget = budget.target(property.psi))
           continue
         }
         if (!property.hasBackingField) continue
         if (!property.isVal)
           return assessment(Stability.UNSTABLE, "reason.mutable", property.name.asString())
+            .copy(sourceTarget = budget.target(property.psi))
         val result = classify(property.returnType, usage, actuals, visiting, depth + 1, budget)
         evidence += result.evidence
         if (result.stability == Stability.UNSTABLE) {
@@ -218,7 +239,10 @@ internal object StabilityAnalysis {
               property.name.asString(),
               result.reason,
             )
-            .copy(evidence = result.evidence + Evidence.SOURCE)
+            .copy(
+              evidence = result.evidence + Evidence.SOURCE,
+              sourceTarget = result.sourceTarget ?: budget.target(property.psi),
+            )
         }
         if (result.stability == Stability.UNKNOWN) {
           unknown =
@@ -228,11 +252,15 @@ internal object StabilityAnalysis {
                 property.name.asString(),
                 result.reason,
               )
-              .copy(evidence = result.evidence + Evidence.SOURCE)
+              .copy(
+                evidence = result.evidence + Evidence.SOURCE,
+                sourceTarget = result.sourceTarget ?: budget.target(property.psi),
+              )
         }
       }
       return unknown
-        ?: assessment(Stability.STABLE, "reason.fields").copy(evidence = evidence.toSet())
+        ?: assessment(Stability.STABLE, "reason.fields")
+          .copy(evidence = evidence.toSet(), sourceTarget = budget.target(source))
     } finally {
       visiting.remove(symbol)
     }
@@ -291,7 +319,12 @@ internal object StabilityAnalysis {
             result.reason,
           )
         if (result.stability == Stability.UNSTABLE)
-          return StabilityAssessment(Stability.UNSTABLE, reason, evidence.toSet())
+          return StabilityAssessment(
+            Stability.UNSTABLE,
+            reason,
+            evidence.toSet(),
+            result.sourceTarget,
+          )
         if (result.stability == Stability.UNKNOWN) unknown = true
         reasons += reason
       }
@@ -306,7 +339,10 @@ internal object StabilityAnalysis {
     }
   }
 
-  private class VisitBudget(private var remaining: Int) {
+  private class VisitBudget(private var remaining: Int, private val navigation: Boolean) {
+    fun target(element: com.intellij.psi.PsiElement?) =
+      if (navigation) StabilityNavigation.pointer(element) else null
+
     val binaries = BinaryMetadataReader()
     val exhausted: Boolean
       get() = remaining <= 0

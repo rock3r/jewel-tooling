@@ -60,6 +60,135 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     )
   }
 
+  fun testNavigationUsesTheResponsibleDeclaration() {
+    myFixture.configureByText(
+      "Navigation.kt",
+      """
+      import androidx.compose.runtime.Composable
+      class Other(var value: String)
+      class Inner(var value: String)
+      class Outer(val inner: Inner)
+      class Body { var body: String = "" }
+      class Delegated { val lazyValue: String by lazy { "" } }
+      class StableSource(val value: String)
+      @Composable fun Demo(nested: Outer, body: Body, delegated: Delegated, stable: StableSource) {}
+      """
+        .trimIndent(),
+    )
+    backgroundRead {
+      val function =
+        (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().single()
+      val report = requireNotNull(StabilityAnalysis.inspect(function, navigation = true))
+      val targets = report.parameters.map { requireNotNull(it.assessment.sourceTarget).element!! }
+      assertEquals(listOf("value", "body", "lazyValue", "StableSource"), targets.map { it.name })
+      val nestedClass =
+        com.intellij.psi.util.PsiTreeUtil.getParentOfType(
+          targets[0],
+          org.jetbrains.kotlin.psi.KtClass::class.java,
+        )
+      assertEquals("Inner", nestedClass?.name)
+      val location =
+        requireNotNull(StabilityNavigation.resolve(report.parameters[0].assessment.sourceTarget!!))
+      assertEquals(targets[0].nameIdentifier!!.textOffset, location.offset)
+      val plain = requireNotNull(StabilityAnalysis.inspect(function))
+      assertTrue(plain.parameters.all { it.assessment.sourceTarget == null })
+      assertEquals(plain, report)
+      assertEquals(plain.hashCode(), report.hashCode())
+    }
+  }
+
+  fun testNavigationCrossFileAndUnsupportedTargets() {
+    myFixture.addFileToProject("Model.kt", "class Model(val title: String)")
+    myFixture.configureByText(
+      "Navigation.kt",
+      """
+      import androidx.compose.runtime.Composable
+      import androidx.compose.runtime.Stable
+      @Stable class Contract
+      enum class Mode { ONE }
+      open class Open
+      @Composable fun Demo(model: Model, contract: Contract, mode: Mode, open: Open, text: String, binary: evidence.Stable) {}
+      """
+        .trimIndent(),
+    )
+    backgroundRead {
+      val function =
+        (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().single()
+      val hints = requireNotNull(StabilityAnalysis.inspect(function, navigation = true)).parameters
+      val target = requireNotNull(hints[0].assessment.sourceTarget)
+      assertEquals("Model.kt", StabilityNavigation.resolve(target)?.file?.name)
+      assertTrue(hints.drop(1).all { it.assessment.sourceTarget == null })
+    }
+  }
+
+  fun testNavigationRejectsStaleSnapshotsAndInvalidPointers() {
+    myFixture.configureByText("Navigation.kt", "class Model(val value: String)")
+    val pointer = backgroundRead {
+      requireNotNull(StabilityNavigation.pointer((myFixture.file as KtFile).declarations.single()))
+    }
+    val snapshot = StabilityReportSnapshot(FunctionStability("Demo", emptyList()), 10, 20)
+    assertEquals(
+      NavigationStatus.READY,
+      StabilityNavigation.gate(snapshot, snapshot, true, false, 10, 20, true),
+    )
+    assertEquals(
+      NavigationStatus.STALE,
+      StabilityNavigation.gate(snapshot, snapshot, true, false, 11, 20, true),
+    )
+    assertEquals(
+      NavigationStatus.STALE,
+      StabilityNavigation.gate(snapshot, snapshot, true, false, 10, 21, true),
+    )
+    assertEquals(
+      NavigationStatus.STALE,
+      StabilityNavigation.gate(snapshot, snapshot, true, true, 10, 20, true),
+    )
+    assertEquals(
+      NavigationStatus.INVALID,
+      StabilityNavigation.gate(snapshot, snapshot, true, false, 10, 20, false),
+    )
+    assertEquals(
+      NavigationStatus.CLOSED,
+      StabilityNavigation.gate(snapshot, snapshot.copy(), true, false, 10, 20, true),
+    )
+    assertEquals(
+      NavigationStatus.CLOSED,
+      StabilityNavigation.gate(snapshot, snapshot, false, false, 10, 20, true),
+    )
+    WriteCommandAction.runWriteCommandAction(project) {
+      (myFixture.file as KtFile).declarations.single().delete()
+    }
+    backgroundRead { assertNull(StabilityNavigation.resolve(pointer)) }
+  }
+
+  fun testNavigationButtonIsPlainAndOptional() {
+    myFixture.configureByText("Navigation.kt", "class Model")
+    val pointer = backgroundRead {
+      requireNotNull(StabilityNavigation.pointer((myFixture.file as KtFile).declarations.single()))
+    }
+    val report =
+      FunctionStability(
+        "Demo",
+        listOf(
+          ParameterHint(
+            0,
+            "<html>value",
+            StabilityAssessment(Stability.STABLE, "Source", sourceTarget = pointer),
+          )
+        ),
+      )
+    fun buttons(component: java.awt.Component): List<javax.swing.JButton> =
+      (if (component is javax.swing.JButton) listOf(component) else emptyList()) +
+        (component as? java.awt.Container)?.components?.flatMap { buttons(it) }.orEmpty()
+    assertTrue(buttons(StabilityDetailsPanel(report).component).isEmpty())
+    var clicked = false
+    val button = buttons(StabilityDetailsPanel(report) { clicked = true }.component).single()
+    assertEquals("Go to declaration for <html>value", button.accessibleContext.accessibleName)
+    assertEquals(true, button.getClientProperty("html.disable"))
+    button.doClick()
+    assertTrue(clicked)
+  }
+
   fun testBuiltinNullableFunctionEnumAndAliases() {
     val hints =
       hints(

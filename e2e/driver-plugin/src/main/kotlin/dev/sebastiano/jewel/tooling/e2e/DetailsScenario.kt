@@ -19,6 +19,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import javax.imageio.ImageIO
+import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JScrollPane
 import javax.swing.SwingUtilities
@@ -136,6 +137,24 @@ internal class DetailsScenario {
         laf.updateUI()
       }
     }
+    openDetails(robot, editor, project)
+    val button = edt { navigationButtons(requireNotNull(detailsPanel())).single() }
+    check(edt { button.accessibleContext.accessibleName == "Go to declaration for greeting" })
+    val point = edt {
+      button.locationOnScreen.apply { translate(button.width / 2, button.height / 2) }
+    }
+    robot.click(point.x, point.y)
+    await("declaration navigation") {
+      edt {
+        detailsPanel() == null &&
+          editor.caretModel.offset == editor.document.text.indexOf("Greeting(val")
+      }
+    }
+    Files.writeString(
+      output.resolve("navigation.txt"),
+      "PASS: greeting navigated to the Greeting declaration",
+    )
+    edt { editor.caretModel.moveToOffset(editor.document.text.indexOf("GreetingRow")) }
     // Invoke the registered keyboard/menu action through the actual Action System.
     edt {
       ActionManager.getInstance()
@@ -157,6 +176,11 @@ internal class DetailsScenario {
     }
     await("edit dismissed popup") { edt { detailsPanel() == null } }
   }
+
+  private fun navigationButtons(component: Component): List<JButton> =
+    (if (component is JButton && component.text == "Go to declaration") listOf(component)
+    else emptyList()) +
+      (component as? Container)?.components?.flatMap { navigationButtons(it) }.orEmpty()
 
   private fun visibleText(component: Component): List<String> {
     if (!component.isShowing) return emptyList()

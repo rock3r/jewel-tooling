@@ -4,7 +4,7 @@ Jewel Tooling shows a static stability estimate beside each parameter of a Kotli
 
 ## Install the plugin
 
-Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.3.0.zip` and restart when prompted.
+Build with JDK 21 using `./gradlew :buildPlugin`. In IntelliJ IDEA, open **Settings → Plugins**, choose the gear menu, then **Install Plugin from Disk**. Select `build/distributions/jewel-tooling-0.3.1.zip` and restart when prompted.
 
 The build targets IntelliJ IDEA 2026.2.0.1 with its bundled Kotlin plugin. This IDE uses K2. There is no upper IDE build limit, so newer IDEs can install the plugin. Only build 262.8665.337 has been validated; newer IDE and Android Studio builds may need API compatibility fixes.
 
@@ -47,6 +47,13 @@ Click the gutter indicator beside a composable function to open **Compose stabil
 ![Function stability details in the dark IDE theme](images/details-dark.png)
 
 To open the same view from the keyboard, place the caret inside the function, open **Find Action**, and choose **Inspect Compose Stability**. The action is also in the editor context menu. You can select and copy explanation text, scroll through longer parameter lists, and resize the popup. Press **Escape** to return to the editor. Editing the source or switching editors closes the popup so it cannot keep showing an outdated result.
+
+Choose **Go to declaration** when an explanation offers it. The editor opens the responsible property or the inferred stable class.
+Nested explanations can lead to a property inside another source class. Targets come from resolved declarations in the same IDE module.
+The button is available by keyboard and includes the parameter name for screen readers.
+
+Navigation stops if indexing starts or any project source changes after the analysis. Close and reopen the details to refresh the targets.
+A missing button means that the explanation has no supported source target. Compiler text and binary metadata do not become guessed source links.
 
 ![The same details in the light IDE theme](images/details-light.png)
 

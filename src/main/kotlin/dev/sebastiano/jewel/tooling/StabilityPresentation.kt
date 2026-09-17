@@ -1,6 +1,7 @@
 package dev.sebastiano.jewel.tooling
 
 import com.intellij.icons.AllIcons
+import com.intellij.psi.SmartPsiElementPointer
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
@@ -14,11 +15,13 @@ import java.awt.Font
 import java.awt.Rectangle
 import javax.swing.BoxLayout
 import javax.swing.Icon
+import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.Scrollable
 import javax.swing.SwingConstants
 import javax.swing.text.DefaultCaret
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 
 internal object StabilityPresentation {
   fun icon(stability: Stability): Icon =
@@ -61,7 +64,10 @@ internal object StabilityPresentation {
 
 /** Native, selectable text: source names and types are never interpreted as HTML. */
 @Suppress("MagicNumber") // Fixed, scaled spacing and viewport sizes for this native popup.
-internal class StabilityDetailsPanel(report: FunctionStability) {
+internal class StabilityDetailsPanel(
+  report: FunctionStability,
+  navigate: ((SmartPsiElementPointer<KtNamedDeclaration>) -> Unit)? = null,
+) {
   val component: JComponent
   val focus: JComponent
 
@@ -102,7 +108,29 @@ internal class StabilityDetailsPanel(report: FunctionStability) {
         }
       val explanation = text(parameter.assessment.reason)
       row.add(header, BorderLayout.NORTH)
-      row.add(explanation, BorderLayout.CENTER)
+      val body =
+        JPanel().apply {
+          isOpaque = false
+          layout = BoxLayout(this, BoxLayout.Y_AXIS)
+          add(explanation)
+        }
+      row.add(body, BorderLayout.CENTER)
+      val target = parameter.assessment.sourceTarget
+      if (target != null && navigate != null) {
+        val button =
+          JButton(JewelToolingBundle.message("details.navigate")).apply {
+            putClientProperty("html.disable", true)
+            accessibleContext.accessibleName =
+              JewelToolingBundle.message("details.navigate.accessible", parameter.name)
+            addActionListener { navigate(target) }
+          }
+        val actions =
+          JPanel(FlowLayout(FlowLayout.LEADING, 0, 0)).apply {
+            isOpaque = false
+            add(button)
+          }
+        body.add(section(actions, 8, 0))
+      }
       if (parameter.assessment.evidence.isNotEmpty()) {
         row.add(
           text(StabilityPresentation.evidence(parameter.assessment)).apply {
@@ -130,7 +158,17 @@ internal class StabilityDetailsPanel(report: FunctionStability) {
       JBScrollPane(rows).apply {
         border = JBUI.Borders.empty()
         horizontalScrollBarPolicy = JBScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-        preferredSize = JBUI.size(580, minOf(520, 210 + report.parameters.size * 105))
+        preferredSize =
+          JBUI.size(
+            580,
+            minOf(
+              520,
+              210 +
+                report.parameters.size * 105 +
+                report.parameters.count { it.assessment.sourceTarget != null && navigate != null } *
+                  36,
+            ),
+          )
       }
     component =
       JBPanel<JBPanel<*>>(BorderLayout()).apply {

@@ -19,6 +19,8 @@ import com.intellij.openapi.editor.event.EditorFactoryListener
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopup
 import com.intellij.openapi.ui.popup.JBPopupFactory
@@ -26,6 +28,8 @@ import com.intellij.openapi.ui.popup.JBPopupListener
 import com.intellij.openapi.ui.popup.LightweightWindowEvent
 import com.intellij.openapi.util.Disposer
 import com.intellij.psi.PsiDocumentManager
+import com.intellij.psi.SmartPsiElementPointer
+import com.intellij.psi.util.PsiModificationTracker
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
 import java.util.concurrent.CancellationException
@@ -35,6 +39,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
 @Service(Service.Level.PROJECT)
@@ -44,6 +49,7 @@ internal class StabilityDetailsService(
 ) : Disposable {
   private var request: Job? = null
   private var popup: JBPopup? = null
+  private var currentSnapshot: StabilityReportSnapshot? = null
   @Volatile private var disposed = false
 
   /** Called on EDT; each invocation owns one cancellable background read. */
@@ -60,12 +66,7 @@ internal class StabilityDetailsService(
       requestScope.launch(Dispatchers.Default + modality) {
         val report =
           try {
-            smartReadAction(project) {
-              val file =
-                PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? KtFile
-              if (file == null || file.isCompiled || !file.isValid) null
-              else functionAt(file, offset)?.let { StabilityAnalysis.inspect(it) }
-            }
+            smartReadAction(project) { readSnapshot(editor, offset) }
           } catch (exception: Exception) {
             if (exception is ControlFlowException || exception is CancellationException)
               throw exception
@@ -88,6 +89,20 @@ internal class StabilityDetailsService(
       }
   }
 
+  private fun readSnapshot(editor: Editor, offset: Int): StabilityReportSnapshot? {
+    val file = PsiDocumentManager.getInstance(project).getPsiFile(editor.document) as? KtFile
+    if (file == null || file.isCompiled || !file.isValid) return null
+    return functionAt(file, offset)?.let { function ->
+      StabilityAnalysis.inspect(function, navigation = true)?.let { report ->
+        StabilityReportSnapshot(
+          report,
+          PsiModificationTracker.getInstance(project).modificationCount,
+          editor.document.modificationStamp,
+        )
+      }
+    }
+  }
+
   private fun canShow(editor: Editor, stamp: Long): Boolean =
     !disposed &&
       !project.isDisposed &&
@@ -95,8 +110,10 @@ internal class StabilityDetailsService(
       editor.document.modificationStamp == stamp &&
       FileEditorManager.getInstance(project).selectedTextEditor === editor
 
-  private fun open(editor: Editor, report: FunctionStability) {
-    val view = StabilityDetailsPanel(report)
+  private fun open(editor: Editor, snapshot: StabilityReportSnapshot) {
+    currentSnapshot = snapshot
+    val view =
+      StabilityDetailsPanel(snapshot.report) { target -> navigate(editor, snapshot, target) }
     val created =
       JBPopupFactory.getInstance()
         .createComponentPopupBuilder(view.component, view.focus)
@@ -111,7 +128,10 @@ internal class StabilityDetailsService(
     created.addListener(
       object : JBPopupListener {
         override fun onClosed(event: LightweightWindowEvent) {
-          if (popup === created) popup = null
+          if (popup === created) {
+            popup = null
+            currentSnapshot = null
+          }
         }
       }
     )
@@ -148,11 +168,53 @@ internal class StabilityDetailsService(
     created.showInBestPositionFor(editor)
   }
 
+  internal fun navigate(
+    editor: Editor,
+    snapshot: StabilityReportSnapshot,
+    target: SmartPsiElementPointer<KtNamedDeclaration>,
+  ) {
+    val alive = !disposed && !project.isDisposed && !editor.isDisposed && popup?.isDisposed == false
+    if (!alive || currentSnapshot !== snapshot) return
+    val indexing = DumbService.isDumb(project)
+    var location: DeclarationLocation? = null
+    val status =
+      ApplicationManager.getApplication().runReadAction<NavigationStatus> {
+        val initial =
+          StabilityNavigation.gate(
+            snapshot,
+            currentSnapshot,
+            alive,
+            indexing,
+            PsiModificationTracker.getInstance(project).modificationCount,
+            editor.document.modificationStamp,
+            true,
+          )
+        if (initial != NavigationStatus.READY) initial
+        else {
+          location = StabilityNavigation.resolve(target)
+          if (location == null) NavigationStatus.INVALID else NavigationStatus.READY
+        }
+      }
+    when (status) {
+      NavigationStatus.READY -> {
+        val destination = location ?: return
+        popup?.cancel()
+        OpenFileDescriptor(project, destination.file, destination.offset).navigate(true)
+      }
+      NavigationStatus.STALE,
+      NavigationStatus.INVALID ->
+        HintManager.getInstance()
+          .showInformationHint(editor, JewelToolingBundle.message("details.navigate.stale"))
+      NavigationStatus.CLOSED -> Unit
+    }
+  }
+
   override fun dispose() {
     disposed = true
     request?.cancel()
     request = null
     popup = null
+    currentSnapshot = null
   }
 
   companion object {
