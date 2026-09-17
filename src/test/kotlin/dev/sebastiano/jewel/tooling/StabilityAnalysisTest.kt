@@ -41,6 +41,8 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     super.setUp()
     val stdlib = File(System.getProperty("jewel.tooling.stdlib"))
     PsiTestUtil.addLibrary(module, "kotlin-stdlib", stdlib.parent, stdlib.name)
+    val binaryFixtures = File(System.getProperty("jewel.tooling.compilerFixtures"))
+    PsiTestUtil.addLibrary(module, "compiler-fixtures", binaryFixtures.parent, binaryFixtures.name)
     myFixture.addFileToProject(
       "androidx/compose/runtime/Annotations.kt",
       """
@@ -623,6 +625,246 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
       Stability.UNKNOWN,
       StabilityPresentation.overall(FunctionStability("Empty", emptyList())),
     )
+  }
+
+  fun testRealBinaryMetadataAndGenericSelection() {
+    val results =
+      hints(
+          """
+      import androidx.compose.runtime.Composable
+      import evidence.*
+      @Composable fun Demo(a: Stable, b: Mutable, c: Used<String>, d: Used<List<String>>,
+        e: Used<*>, f: Unused<*>, g: Partial<*, String, *>, h: Partial<String, List<String>, String>,
+        i: Unused3<*, *, *>, j: MutableGeneric<*>) {}
+    """
+        )
+        .map { it.assessment }
+    assertEquals(
+      listOf(
+        Stability.STABLE,
+        Stability.UNSTABLE,
+        Stability.STABLE,
+        Stability.UNSTABLE,
+        Stability.UNKNOWN,
+        Stability.STABLE,
+        Stability.STABLE,
+        Stability.UNSTABLE,
+        Stability.STABLE,
+        Stability.UNSTABLE,
+      ),
+      results.map { it.stability },
+    )
+    assertEquals(setOf(Evidence.COMPILER_METADATA), results[0].evidence)
+    assertEquals(setOf(Evidence.COMPILER_METADATA, Evidence.BUILTIN), results[2].evidence)
+    assertEquals(setOf(Evidence.COMPILER_METADATA, Evidence.UNSUPPORTED), results[4].evidence)
+    backgroundRead {
+      val function =
+        (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().single()
+      org.jetbrains.kotlin.analysis.api.analyze(function) {
+        val type =
+          function.valueParameters.first().typeReference!!.type
+            as org.jetbrains.kotlin.analysis.api.types.KaClassType
+        val declaration =
+          requireNotNull(type.expandedSymbol).psi as org.jetbrains.kotlin.psi.KtClass
+        assertTrue(
+          "The fixture must resolve as a binary Kotlin class",
+          declaration.containingKtFile.isCompiled,
+        )
+      }
+    }
+  }
+
+  fun testBinaryUnsupportedCasesDoNotHideHealthyParameters() {
+    val results =
+      hints(
+          """
+      import androidx.compose.runtime.Composable
+      import evidence.*
+      @Composable fun Demo(a: Base<String>, b: WithInitializer, c: Outer.Inner,
+        d: Singleton, e: Value, f: Stable, g: Contract, h: Choice) {}
+    """
+        )
+        .map { it.assessment }
+    assertEquals(
+      List(5) { Stability.UNKNOWN } + List(3) { Stability.STABLE },
+      results.map { it.stability },
+    )
+    assertEquals(setOf(Evidence.DECLARED_CONTRACT), results[6].evidence)
+    assertEquals(setOf(Evidence.BUILTIN), results[7].evidence)
+  }
+
+  fun testBinaryAndSourceEvidenceRemainDistinct() {
+    val results =
+      hints(
+          """
+      import androidx.compose.runtime.Composable
+      import evidence.Used
+      class Local(val name: String)
+      class Wrapper(val value: Used<String>)
+      @Composable fun Demo(a: Used<Local>, b: Wrapper) {}
+    """
+        )
+        .map { it.assessment }
+    for (result in results) {
+      assertEquals(Stability.STABLE, result.stability)
+      assertEquals(
+        setOf(Evidence.COMPILER_METADATA, Evidence.SOURCE, Evidence.BUILTIN),
+        result.evidence,
+      )
+      assertTrue(StabilityPresentation.evidence(result).startsWith("Mixed evidence:"))
+    }
+  }
+
+  fun testSourceResolutionWinsOverBinaryWithSameName() {
+    myFixture.addFileToProject(
+      "evidence/Stable.kt",
+      "package evidence; class Stable(var title: String)",
+    )
+    val result =
+      hints(
+          "import androidx.compose.runtime.Composable; @Composable fun Demo(a: evidence.Stable) {}"
+        )
+        .single()
+        .assessment
+    assertEquals(Stability.UNSTABLE, result.stability)
+    assertEquals(setOf(Evidence.SOURCE), result.evidence)
+  }
+
+  fun testBinaryReaderNeverOpensStreamsOnEdt() {
+    val file = BinaryFile("Stable.class", binaryBytes())
+    assertTrue(ApplicationManager.getApplication().isDispatchThread)
+    assertEquals(
+      CompilerStabilityMetadata.Result.Unsupported,
+      BinaryMetadataReader().read(file, "evidence/Stable", 0),
+    )
+    assertEquals(0, file.opens)
+    assertEquals(
+      CompilerStabilityMetadata.Result.Proven(false, 0),
+      backgroundRead { BinaryMetadataReader().read(file, "evidence/Stable", 0) },
+    )
+    assertEquals(1, file.opens)
+  }
+
+  fun testBinaryReaderCapsActualBytesAndContainsIoFailure() {
+    backgroundRead {
+      val reader = BinaryMetadataReader()
+      val oversized =
+        BinaryFile("Oversized.class", ByteArray(CompilerStabilityMetadata.MAX_BYTES + 16))
+      assertEquals(
+        CompilerStabilityMetadata.Result.Unsupported,
+        reader.read(oversized, "evidence/Stable", 0),
+      )
+      assertTrue(oversized.readBytes <= CompilerStabilityMetadata.MAX_BYTES + 1)
+      val broken =
+        BinaryFile("Broken.class", byteArrayOf(), java.io.IOException("Expected test read failure"))
+      assertEquals(
+        CompilerStabilityMetadata.Result.Unsupported,
+        reader.read(broken, "evidence/Stable", 0),
+      )
+      val valid = BinaryFile("Stable.class", binaryBytes())
+      assertEquals(
+        CompilerStabilityMetadata.Result.Proven(false, 0),
+        reader.read(valid, "evidence/Stable", 0),
+      )
+      assertEquals(
+        CompilerStabilityMetadata.Result.Proven(false, 0),
+        reader.read(valid, "evidence/Stable", 0),
+      )
+      assertEquals(1, valid.opens)
+      // No decoding result survives a new inspection, even when a file retains its stamp.
+      assertEquals(
+        CompilerStabilityMetadata.Result.Proven(false, 0),
+        BinaryMetadataReader().read(valid, "evidence/Stable", 0),
+      )
+      assertEquals(2, valid.opens)
+      val capped = BinaryMetadataReader()
+      repeat(4) { index ->
+        assertEquals(
+          CompilerStabilityMetadata.Result.Unsupported,
+          capped.read(
+            BinaryFile("$index.class", ByteArray(CompilerStabilityMetadata.MAX_BYTES)),
+            "evidence/Stable",
+            0,
+          ),
+        )
+      }
+      val afterLimit = BinaryFile("After.class", binaryBytes())
+      assertEquals(
+        CompilerStabilityMetadata.Result.Unsupported,
+        capped.read(afterLimit, "evidence/Stable", 0),
+      )
+      assertEquals(0, afterLimit.opens)
+      val classCapped = BinaryMetadataReader()
+      repeat(32) { index ->
+        classCapped.read(BinaryFile("$index.class", byteArrayOf()), "evidence/Stable", 0)
+      }
+      val afterClassLimit = BinaryFile("AfterClasses.class", binaryBytes())
+      assertEquals(
+        CompilerStabilityMetadata.Result.Unsupported,
+        classCapped.read(afterClassLimit, "evidence/Stable", 0),
+      )
+      assertEquals(0, afterClassLimit.opens)
+    }
+  }
+
+  fun testBinaryReaderPreservesCancellation() {
+    val failure = ProcessCanceledException()
+    val result =
+      org.junit.Assert.assertThrows(java.util.concurrent.ExecutionException::class.java) {
+        backgroundRead {
+          BinaryMetadataReader()
+            .read(BinaryFile("Canceled.class", byteArrayOf(), failure), "evidence/Stable", 0)
+        }
+      }
+    assertSame(failure, result.cause)
+  }
+
+  fun testBinaryMetadataStress() {
+    val source =
+      "import androidx.compose.runtime.Composable;\n" +
+        (1..500).joinToString("\n") { "@Composable fun Demo$it(value: evidence.Stable) {}" }
+    myFixture.configureByText("Example.kt", source)
+    val started = System.nanoTime()
+    val results = backgroundRead {
+      (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().flatMap {
+        StabilityAnalysis.hints(it)
+      }
+    }
+    assertEquals(500, results.size)
+    assertTrue(
+      results.all {
+        it.assessment.stability == Stability.STABLE &&
+          it.assessment.evidence == setOf(Evidence.COMPILER_METADATA)
+      }
+    )
+    val millis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started)
+    assertTrue("500 binary inspections exceeded 30 seconds: $millis ms", millis < 30_000)
+    println("500 binary inspections: $millis ms")
+  }
+
+  private fun binaryBytes(): ByteArray =
+    java.util.zip.ZipFile(System.getProperty("jewel.tooling.compilerFixtures")).use { jar ->
+      jar.getInputStream(jar.getEntry("evidence/Stable.class")).use { it.readBytes() }
+    }
+
+  private class BinaryFile(
+    name: String,
+    private val bytes: ByteArray,
+    private val failure: Exception? = null,
+  ) : com.intellij.testFramework.LightVirtualFile(name) {
+    var opens = 0
+    var readBytes = 0
+
+    override fun getLength(): Long = 0 // Exercise the actual stream cap, not the length fast path.
+
+    override fun getInputStream(): java.io.InputStream {
+      opens++
+      failure?.let { throw it }
+      return object : java.io.ByteArrayInputStream(bytes) {
+        override fun read(buffer: ByteArray, offset: Int, length: Int): Int =
+          super.read(buffer, offset, length).also { if (it > 0) readBytes += it }
+      }
+    }
   }
 
   private fun markers(

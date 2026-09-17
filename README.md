@@ -19,7 +19,7 @@ To use an existing compatible IDE distribution instead of downloading one:
 ./gradlew -PlocalIdePath=/path/to/IntelliJIDEA.app/Contents :buildPlugin
 ```
 
-Install `build/distributions/jewel-tooling-0.1.2.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
+Install `build/distributions/jewel-tooling-0.2.0.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
 Open a project, allow indexing to finish, then open a Kotlin file with `@Composable` functions.
 Hints appear after parameter types; hover for a short explanation. Click a function’s gutter indicator
 for a summary and a scrollable explanation of every input, or use **Inspect Compose Stability** in Find Action.
@@ -44,19 +44,21 @@ Read the [user guide](docs/user-guide.md) for explanations, limits, screenshots,
 ## What the hints mean
 
 - **stable:** a built-in stable type, function, enum, declared `@Stable`/`@Immutable` contract, or a final source class
-  whose stored properties recursively have stable types. Explicit contracts are trusted, not verified.
+  whose stored properties recursively have stable types. A supported compiled class can also use compiler metadata and its selected type arguments. Explicit contracts are trusted, not verified.
 - **unstable:** standard collections/arrays, varargs, or a stored mutable/unstable property.
-- **unknown:** unresolved types, unspecialized type parameters, recursive/delegated/inherited cases, or unannotated external types.
+- **unknown:** unresolved types, unspecialized type parameters, recursive/delegated/inherited cases, or external types without supported metadata.
 
 These are **conservative static estimates**, not compiler reports. Stability alone does not determine skipping.
 Strong skipping can skip unstable parameters when the relevant object identities are unchanged.
-V1 does not read stability configuration files, decode `$stable` / `StabilityInferred`, infer inherited/custom stability contracts,
-measure recomposition, or modify source. Do not add `@Stable` just to turn a hint green.
+The compiler metadata reader supports a narrow, tested subset of Kotlin/Compose 2.4.0 JVM output, up to Java 21 class files.
+Other versions and computed initializers stay unknown. The details view shows the evidence behind each result.
+The plugin does not read stability configuration files, infer inherited/custom stability contracts, measure recomposition, or modify source. Do not add `@Stable` just to turn a hint green.
 
 ## Development
 
 `src/test` uses real IDE Kotlin resolution with small Compose annotation fixtures. It covers aliases, false annotation matches,
 mutable and immutable shapes, generic substitution, delegates, bounded inference, and parameter hint placement.
+A separate fixture module compiles real dependency classes with the pinned Compose compiler; tests also reject malformed or unsupported metadata.
 The implementation keeps Kotlin Analysis API objects inside their analysis session, checks cancellation, and runs through
 IntelliJ's declarative inlay pass rather than doing analysis on the event dispatch thread.
 

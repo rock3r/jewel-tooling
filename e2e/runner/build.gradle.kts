@@ -39,7 +39,7 @@ val driverZip =
 
 tasks.test {
   useJUnitPlatform()
-  dependsOn(productionZip, driverZip)
+  dependsOn(productionZip, driverZip, rootProject.tasks.named("exportCompilerFixtures"))
   outputs.upToDateWhen { false }
   jvmArgs("--add-opens=java.base/sun.nio.fs=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED")
   systemProperty("jewel.test.repo", rootProject.layout.projectDirectory.asFile.absolutePath)

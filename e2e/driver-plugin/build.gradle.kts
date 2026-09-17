@@ -76,6 +76,11 @@ dependencies {
 val fixtureSdk = rootProject.layout.projectDirectory.dir("fixtures/ijpl/.local/sdk")
 
 tasks.register<Sync>("exportFixtureSdk") {
+  dependsOn(rootProject.tasks.named("exportCompilerFixtures"))
+  from(rootProject.configurations.named("compilerFixtures")) {
+    into("api")
+    rename { "compiler-metadata.jar" }
+  }
   from(
     provider {
       (configurations.getByName("intellijPlatformClasspath") +

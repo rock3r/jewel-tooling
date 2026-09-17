@@ -20,6 +20,7 @@ import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
 import javax.imageio.ImageIO
 import javax.swing.JLabel
+import javax.swing.JScrollPane
 import javax.swing.SwingUtilities
 import javax.swing.text.JTextComponent
 import kotlinx.coroutines.delay
@@ -55,12 +56,14 @@ internal class DetailsScenario {
     check(content.contains("GreetingRow")) { content }
     check(content.contains("Pair<String, String>")) { content }
     check(
-      content.contains("2 stable") &&
+      content.contains("3 stable") &&
         content.contains("1 unstable") &&
         content.contains("1 unknown")
     ) {
       content
     }
+    check(content.contains("Compiler metadata")) { content }
+    check(content.contains("Evidence:")) { content }
     check(content.contains("strong skipping")) { content }
   }
 
@@ -87,6 +90,17 @@ internal class DetailsScenario {
 
   private suspend fun captureDetails(robot: RobotDriver, output: Path, name: String) {
     delay(PAINT_SETTLE_MS)
+    edt {
+      val panel = requireNotNull(detailsPanel()) as Container
+      val scroll = panel.components.filterIsInstance<JScrollPane>().single()
+      check(scroll.viewport.viewPosition.y == 0) {
+        val focus = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner
+        "Details must open at the top: position=${scroll.viewport.viewPosition}, " +
+          "view=${scroll.viewport.viewSize}, extent=${scroll.viewport.extentSize}, " +
+          "focus=${focus?.javaClass?.name}, text=${(focus as? JTextComponent)?.text}, " +
+          "bounds=${focus?.bounds}, orientation=${scroll.componentOrientation}"
+      }
+    }
     val window = edt { SwingUtilities.getWindowAncestor(requireNotNull(detailsPanel())) }
     val region = edt { Rectangle(window.locationOnScreen, window.size) }
     val transform = edt { window.graphicsConfiguration.defaultTransform }

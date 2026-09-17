@@ -16,6 +16,7 @@ repositories {
 kotlin { jvmToolchain(25) }
 
 dependencies {
+  implementation(files(".local/compiler-metadata.jar"))
   implementation(compose.desktop.currentOs)
   // Jewel 0.38 omitted these standalone icon runtime dependencies from its POM.
   implementation("com.jetbrains.intellij.platform:icons-impl:${libs.versions.ideaBuild.get()}") {

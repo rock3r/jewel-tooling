@@ -42,7 +42,21 @@ intellijPlatform {
   }
 }
 
+val compilerFixtures by configurations.creating {
+  isCanBeConsumed = false
+  isCanBeResolved = true
+}
+
+dependencies {
+  compilerFixtures(project(path = ":test-fixtures:compiler-metadata", configuration = "fixtureJar"))
+}
+
 tasks.test {
+  dependsOn(compilerFixtures)
+  inputs.files(compilerFixtures)
+  doFirst {
+    systemProperty("jewel.tooling.compilerFixtures", compilerFixtures.singleFile.absolutePath)
+  }
   systemProperty("idea.kotlin.plugin.use.k2", "true")
   val stdlib =
     configurations.testRuntimeClasspath.map { files ->
@@ -66,3 +80,9 @@ tasks.named<com.ncorti.ktfmt.gradle.tasks.KtfmtCheckTask>("ktfmtCheckMain") {
 }
 
 detekt { source.from(files("fixtures/ijpl/src/main/kotlin")) }
+
+// Binary-only libraries exercise dependency analysis in both disposable editor targets.
+tasks.register<Sync>("exportCompilerFixtures") {
+  from(compilerFixtures) { rename { "compiler-metadata.jar" } }
+  into(layout.projectDirectory.dir("fixtures/standalone/.local"))
+}

@@ -31,7 +31,19 @@ internal enum class Stability(val messageKey: String) {
   UNKNOWN("hint.unknown"),
 }
 
-internal data class StabilityAssessment(val stability: Stability, val reason: String)
+internal enum class Evidence(val messageKey: String) {
+  BUILTIN("evidence.builtin"),
+  DECLARED_CONTRACT("evidence.contract"),
+  SOURCE("evidence.source"),
+  COMPILER_METADATA("evidence.compiler"),
+  UNSUPPORTED("evidence.unsupported"),
+}
+
+internal data class StabilityAssessment(
+  val stability: Stability,
+  val reason: String,
+  val evidence: Set<Evidence> = emptySet(),
+)
 
 internal data class ParameterHint(
   val offset: Int,
@@ -147,6 +159,18 @@ internal object StabilityAnalysis {
     if (symbol.isInline) return assessment(Stability.UNKNOWN, "reason.valueClass")
     if (fqName.startsWith("java.")) return assessment(Stability.UNKNOWN, "reason.platformType")
     val source = symbol.psi as? KtClass ?: return assessment(Stability.UNKNOWN, "reason.external")
+    if (source.containingKtFile.isCompiled) {
+      return classifyBinary(
+        classType,
+        symbol,
+        source,
+        usage,
+        substitutions,
+        visiting,
+        depth,
+        budget,
+      )
+    }
     if (source.hasModifier(KtTokens.INNER_KEYWORD) || source.isLocal) {
       return assessment(Stability.UNKNOWN, "reason.captured")
     }
@@ -174,6 +198,7 @@ internal object StabilityAnalysis {
           else argumentType
       }
       var unknown: StabilityAssessment? = null
+      val evidence = mutableSetOf(Evidence.SOURCE)
       for (property in symbol.declaredMemberScope.callables.filterIsInstance<KaPropertySymbol>()) {
         ProgressManager.checkCanceled()
         val psi = property.psi as? KtProperty
@@ -185,31 +210,104 @@ internal object StabilityAnalysis {
         if (!property.isVal)
           return assessment(Stability.UNSTABLE, "reason.mutable", property.name.asString())
         val result = classify(property.returnType, usage, actuals, visiting, depth + 1, budget)
+        evidence += result.evidence
         if (result.stability == Stability.UNSTABLE) {
           return assessment(
-            Stability.UNSTABLE,
-            "reason.property",
-            property.name.asString(),
-            result.reason,
-          )
-        }
-        if (result.stability == Stability.UNKNOWN) {
-          unknown =
-            assessment(
-              Stability.UNKNOWN,
+              Stability.UNSTABLE,
               "reason.property",
               property.name.asString(),
               result.reason,
             )
+            .copy(evidence = result.evidence + Evidence.SOURCE)
+        }
+        if (result.stability == Stability.UNKNOWN) {
+          unknown =
+            assessment(
+                Stability.UNKNOWN,
+                "reason.property",
+                property.name.asString(),
+                result.reason,
+              )
+              .copy(evidence = result.evidence + Evidence.SOURCE)
         }
       }
-      return unknown ?: assessment(Stability.STABLE, "reason.fields")
+      return unknown
+        ?: assessment(Stability.STABLE, "reason.fields").copy(evidence = evidence.toSet())
+    } finally {
+      visiting.remove(symbol)
+    }
+  }
+
+  // Keep unsupported-case rejection and unstable precedence explicit, as in the source decision
+  // table.
+  @Suppress("ReturnCount", "CyclomaticComplexMethod")
+  private fun KaSession.classifyBinary(
+    type: KaClassType,
+    symbol: KaNamedClassSymbol,
+    source: KtClass,
+    usage: KtNamedFunction,
+    substitutions: Map<KaTypeParameterSymbol, KaType>,
+    visiting: MutableSet<KaClassSymbol>,
+    depth: Int,
+    budget: VisitBudget,
+  ): StabilityAssessment {
+    if (symbol.isInner || source.isLocal) return assessment(Stability.UNKNOWN, "reason.captured")
+    val file =
+      source.containingKtFile.virtualFile ?: return assessment(Stability.UNKNOWN, "reason.external")
+    val id = type.classId
+    val internalName =
+      listOf(
+          id.packageFqName.asString().replace('.', '/'),
+          id.relativeClassName.asString().replace('.', '$'),
+        )
+        .filter { it.isNotEmpty() }
+        .joinToString("/")
+    val metadata =
+      budget.binaries.read(file, internalName, symbol.typeParameters.size)
+        as? CompilerStabilityMetadata.Result.Proven
+        ?: return assessment(Stability.UNKNOWN, "reason.external")
+    val compiler = setOf(Evidence.COMPILER_METADATA)
+    if (metadata.unstableBase)
+      return assessment(Stability.UNSTABLE, "reason.compilerUnstable").copy(evidence = compiler)
+    if (!visiting.add(symbol))
+      return assessment(Stability.UNKNOWN, "reason.recursive")
+        .copy(evidence = compiler + Evidence.UNSUPPORTED)
+    try {
+      val evidence = compiler.toMutableSet()
+      val reasons = mutableListOf<String>()
+      var unknown = false
+      for ((index, parameter) in symbol.typeParameters.withIndex()) {
+        if (metadata.argumentMask and (1 shl index) == 0) continue
+        ProgressManager.checkCanceled()
+        val argument = type.typeArguments.getOrNull(index)?.type
+        val result =
+          if (argument == null) assessment(Stability.UNKNOWN, "reason.typeArgument")
+          else classify(argument, usage, substitutions, visiting, depth + 1, budget)
+        evidence += result.evidence
+        val reason =
+          JewelToolingBundle.message(
+            "reason.compilerArgument",
+            parameter.name.asString(),
+            result.reason,
+          )
+        if (result.stability == Stability.UNSTABLE)
+          return StabilityAssessment(Stability.UNSTABLE, reason, evidence.toSet())
+        if (result.stability == Stability.UNKNOWN) unknown = true
+        reasons += reason
+      }
+      return StabilityAssessment(
+        if (unknown) Stability.UNKNOWN else Stability.STABLE,
+        if (reasons.isEmpty()) JewelToolingBundle.message("reason.compilerStable")
+        else reasons.joinToString("\n"),
+        evidence.toSet(),
+      )
     } finally {
       visiting.remove(symbol)
     }
   }
 
   private class VisitBudget(private var remaining: Int) {
+    val binaries = BinaryMetadataReader()
     val exhausted: Boolean
       get() = remaining <= 0
 
@@ -217,7 +315,23 @@ internal object StabilityAnalysis {
   }
 
   private fun assessment(stability: Stability, key: String, vararg arguments: Any) =
-    StabilityAssessment(stability, JewelToolingBundle.message(key, *arguments))
+    StabilityAssessment(
+      stability,
+      JewelToolingBundle.message(key, *arguments),
+      setOf(
+        when (key) {
+          "reason.builtin",
+          "reason.function",
+          "reason.enum",
+          "reason.collection",
+          "reason.vararg" -> Evidence.BUILTIN
+          "reason.contract" -> Evidence.DECLARED_CONTRACT
+          "reason.fields",
+          "reason.mutable" -> Evidence.SOURCE
+          else -> Evidence.UNSUPPORTED
+        }
+      ),
+    )
 
   private const val MAX_DEPTH = 12
   private const val COMPOSABLE = "androidx.compose.runtime.Composable"

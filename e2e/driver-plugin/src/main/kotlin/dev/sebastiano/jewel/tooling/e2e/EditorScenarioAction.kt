@@ -179,6 +179,7 @@ class EditorScenarioAction : AnAction() {
             }
             check(explanations[0].contains("All stored properties"))
             check(explanations[1].contains("collections and arrays"))
+            check(explanations[2].contains("compiler metadata proves"))
             if (java.lang.Boolean.getBoolean("jewel.test.hover")) {
               val point = edt {
                 val bounds = requireNotNull(inlays(editor).first().bounds)

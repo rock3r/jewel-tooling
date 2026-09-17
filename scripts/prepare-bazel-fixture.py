@@ -78,6 +78,7 @@ def main():
         distribution.mkdir(exist_ok=True)
         with zipfile.ZipFile(distribution / "ijpl-fixture.zip", "w", zipfile.ZIP_DEFLATED) as archive:
             archive.writestr("jewel-fixture/lib/fixture.jar", jar_bytes.getvalue())
+            archive.write(FIXTURE / ".local/sdk/api/compiler-metadata.jar", "jewel-fixture/lib/compiler-metadata.jar")
         print(project)
     finally:
         if (BUILD / "bazel-output/server/server.pid.txt").exists():

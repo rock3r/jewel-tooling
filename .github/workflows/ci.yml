@@ -27,7 +27,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Tests, static checks, and distribution verification
-        run: ./gradlew :test :ktfmtCheck :detekt :e2e:driver-plugin:ktfmtCheck :e2e:driver-plugin:detekt :e2e:runner:ktfmtCheck :e2e:runner:detekt :buildPlugin :verifyPluginStructure :verifyPlugin
+        run: ./gradlew :test :ktfmtCheck :detekt :test-fixtures:compiler-metadata:ktfmtCheck :test-fixtures:compiler-metadata:detekt :e2e:driver-plugin:ktfmtCheck :e2e:driver-plugin:detekt :e2e:runner:ktfmtCheck :e2e:runner:detekt :buildPlugin :verifyPluginStructure :verifyPlugin
       - name: Packaging mutation tests
         run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Verify production ZIP and recorded Retina assets

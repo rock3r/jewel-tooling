@@ -48,14 +48,14 @@ def source_digest(root, inputs):
 
 def capture_inputs(root):
     files = set()
-    directories = ["src/main", "e2e/driver-plugin/src", "e2e/runner/src", "fixtures/standalone/src", "fixtures/ijpl/src"]
+    directories = ["src/main", "e2e/driver-plugin/src", "e2e/runner/src", "fixtures/standalone/src", "fixtures/ijpl/src", "test-fixtures/compiler-metadata/src"]
     for directory in directories:
         for path in (root / directory).rglob("*"):
             if path.is_file():
                 files.add(path.relative_to(root).as_posix())
     files.update([
         "build.gradle.kts", "settings.gradle.kts", "gradle.properties", "config/detekt.yml", "gradle/libs.versions.toml",
-        "e2e/driver-plugin/build.gradle.kts", "e2e/runner/build.gradle.kts",
+        "e2e/driver-plugin/build.gradle.kts", "e2e/runner/build.gradle.kts", "test-fixtures/compiler-metadata/build.gradle.kts",
         "fixtures/standalone/build.gradle.kts", "fixtures/standalone/settings.gradle.kts",
         "fixtures/ijpl/.bazelrc", "fixtures/ijpl/MODULE.bazel.lock", "gradle/wrapper/gradle-wrapper.properties", "gradle/wrapper/gradle-wrapper.jar",
         "fixtures/ijpl/MODULE.bazel", "fixtures/ijpl/BUILD.bazel", "fixtures/ijpl/kotlin.bzl", "fixtures/ijpl/.bazelversion",

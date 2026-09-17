@@ -18,6 +18,7 @@ import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.Scrollable
 import javax.swing.SwingConstants
+import javax.swing.text.DefaultCaret
 
 internal object StabilityPresentation {
   fun icon(stability: Stability): Icon =
@@ -34,6 +35,18 @@ internal object StabilityPresentation {
         report.parameters.any { it.assessment.stability == Stability.UNKNOWN } -> Stability.UNKNOWN
       else -> Stability.STABLE
     }
+
+  fun evidence(assessment: StabilityAssessment): String {
+    val names =
+      Evidence.entries
+        .filter { it in assessment.evidence }
+        .joinToString(" · ") { JewelToolingBundle.message(it.messageKey) }
+    val key =
+      if (Evidence.COMPILER_METADATA in assessment.evidence && assessment.evidence.size > 1)
+        "details.mixedEvidence"
+      else "details.evidence"
+    return JewelToolingBundle.message(key, names)
+  }
 
   fun counts(report: FunctionStability): String =
     if (report.parameters.isEmpty()) JewelToolingBundle.message("summary.empty")
@@ -54,7 +67,7 @@ internal class StabilityDetailsPanel(report: FunctionStability) {
 
   init {
     val rows = WrappingPanel()
-    val title = label(report.name).apply { font = font.deriveFont(Font.BOLD, font.size2D + 2) }
+    val title = text(report.name).apply { font = font.deriveFont(Font.BOLD, font.size2D + 2) }
     rows.add(section(title, 0, 10))
     if (report.parameters.isNotEmpty()) {
       val counts =
@@ -69,7 +82,6 @@ internal class StabilityDetailsPanel(report: FunctionStability) {
       }
       rows.add(section(counts, 0, 14))
     }
-    val explanations = mutableListOf<JBTextArea>()
     for (parameter in report.parameters) {
       val row = JPanel(BorderLayout(JBUI.scale(12), JBUI.scale(6))).apply { isOpaque = false }
       val heading =
@@ -89,9 +101,16 @@ internal class StabilityDetailsPanel(report: FunctionStability) {
           add(status, BorderLayout.EAST)
         }
       val explanation = text(parameter.assessment.reason)
-      explanations += explanation
       row.add(header, BorderLayout.NORTH)
       row.add(explanation, BorderLayout.CENTER)
+      if (parameter.assessment.evidence.isNotEmpty()) {
+        row.add(
+          text(StabilityPresentation.evidence(parameter.assessment)).apply {
+            foreground = UIUtil.getContextHelpForeground()
+          },
+          BorderLayout.SOUTH,
+        )
+      }
       row.border =
         JBUI.Borders.compound(
           JBUI.Borders.customLineBottom(
@@ -120,7 +139,7 @@ internal class StabilityDetailsPanel(report: FunctionStability) {
           JewelToolingBundle.message("details.parameters", report.name)
         add(scroll, BorderLayout.CENTER)
       }
-    focus = explanations.firstOrNull() ?: empty
+    focus = title
   }
 
   private fun label(value: String) =
@@ -130,8 +149,11 @@ internal class StabilityDetailsPanel(report: FunctionStability) {
     }
 
   private fun text(value: String) =
-    JBTextArea(value).apply {
+    JBTextArea().apply {
       isEditable = false
+      // Set the policy before inserting text: constructor text can queue a later caret scroll.
+      (caret as? DefaultCaret)?.updatePolicy = DefaultCaret.NEVER_UPDATE
+      text = value
       focusTraversalKeysEnabled = true
       isOpaque = false
       lineWrap = true

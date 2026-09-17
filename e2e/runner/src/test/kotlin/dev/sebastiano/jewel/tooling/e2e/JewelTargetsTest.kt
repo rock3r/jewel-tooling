@@ -37,6 +37,7 @@ class JewelTargetsTest {
         val path = Files.createDirectories(temporary.resolve("fixtures/standalone"))
         val source = repository.resolve("fixtures/standalone")
         copyTree(source.resolve("src"), path.resolve("src"))
+        copyTree(source.resolve(".local"), path.resolve(".local"))
         for (name in listOf("build.gradle.kts", "settings.gradle.kts")) Files.copy(
           source.resolve(name),
           path.resolve(name),
@@ -87,7 +88,7 @@ class JewelTargetsTest {
             System.getProperty("jewel.test.captureId", "development"),
           )
           addSystemProperty("jewel.test.file", "src/main/kotlin/example/Example.kt")
-          addSystemProperty("jewel.test.expected", "stable,unstable,unknown,stable")
+          addSystemProperty("jewel.test.expected", "stable,unstable,stable,unknown,stable")
           addSystemProperty("jewel.test.gradle", target == "standalone")
           addSystemProperty("jewel.test.hover", target == "standalone")
           addSystemProperty("jewel.test.retina", System.getProperty("jewel.test.retina", "false"))
