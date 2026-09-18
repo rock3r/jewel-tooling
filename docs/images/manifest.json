@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "captureId": "5f7c75ca-6735-4c5d-a0cd-b2a29a8c1d68",
+  "captureId": "105fd5e2-f950-4420-b63b-d27ab10d8fdf",
   "inputs": [
     "agent-bridge/build.gradle.kts",
     "agent-bridge/src/main/java/dev/sebastiano/jewel/tooling/bridge/TraceBridge.java",
@@ -98,12 +98,19 @@
     "settings.gradle.kts",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/BinaryMetadataReader.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/CompilerStabilityMetadata.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/ComposeInspectionExecutor.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/ComposeInspectionIcons.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/ComposeInspectionProgramRunner.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/ComposeInspectionShortcuts.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/GradleInspectionSupport.kt",
-    "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionActions.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionGradleSupport.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionLaunchService.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionSupport.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/InstallInspectionSupportAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/JewelToolingBundle.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionEditorHints.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionFormat.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionGutter.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionPanel.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionService.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionToolWindowFactory.kt",
@@ -121,10 +128,16 @@
     "src/main/kotlin/dev/sebastiano/jewel/tooling/McpResults.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/McpServerAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/McpServerService.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpSkillBundle.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpSkillFiles.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpSkillInstaller.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpSkillSetupController.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpSkillSetupPanel.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/OpenRecordingAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportDialog.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportPanel.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportService.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingSiteDetailsPanel.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/ShowStabilityAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityAnalysis.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityColorSettingsPage.kt",
@@ -135,36 +148,42 @@
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityLineMarkerProvider.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityNavigation.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityPresentation.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/TraceSiteLocation.kt",
     "src/main/resources/META-INF/jewel-gradle.xml",
     "src/main/resources/META-INF/plugin.xml",
     "src/main/resources/META-INF/pluginIcon.svg",
     "src/main/resources/colorSchemes/JewelToolingDark.xml",
     "src/main/resources/colorSchemes/JewelToolingLight.xml",
+    "src/main/resources/icons/compose.svg",
+    "src/main/resources/icons/compose_dark.svg",
+    "src/main/resources/icons/runWithCompose.svg",
+    "src/main/resources/icons/runWithCompose_dark.svg",
     "src/main/resources/mcp/jewel-tooling-version.txt",
     "src/main/resources/mcp/tools.json",
     "src/main/resources/messages/JewelToolingBundle.properties",
+    "src/main/resources/skills/jewel-compose-analysis/SKILL.md",
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "87f26e9ad35aba2e9f18c3be57a69bc26f5644d03c54633ef790214cc014779e",
+  "sourceSha256": "f1bc1ade4323b687022e1d93349ae23382fd8c05936b89a862a6ff4f69350835",
   "images": [
     {
       "scenario": "mcp-standalone",
       "path": "docs/images/mcp-standalone.png",
-      "logicalWidth": 614,
-      "logicalHeight": 642,
+      "logicalWidth": 617,
+      "logicalHeight": 842,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "853e549c2cdb362c8abf1a7a6583b4057c945bdfdd0428624e6135b976a6fbed"
+      "sha256": "e659a4ef52720f2a1b35c160b7b0093ab9f2856c2900dee6842cc036e25a58f4"
     },
     {
       "scenario": "mcp-ijpl",
       "path": "docs/images/mcp-ijpl.png",
-      "logicalWidth": 614,
-      "logicalHeight": 642,
+      "logicalWidth": 617,
+      "logicalHeight": 842,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "49d181ba1ca5ab897422e21c46f1bb6e54c0bacc1783fdf34594e4fb306a98fb"
+      "sha256": "7bcbf6320ccc24cd9c3438f50c65249907cd345d5b3b4360bd5acd8e3759bd4c"
     },
     {
       "scenario": "standalone-editor",
@@ -173,7 +192,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "e2b4c8ac9f99922882df8eaf9daac0372acef5465935f6b493eb2152331916c6"
+      "sha256": "d5af151c710569a86275250cc0ebe2a9cbe338085e40a6cfabfcdecac7ad1985"
     },
     {
       "scenario": "explanation",
@@ -182,7 +201,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "a5358f5102f5dab668d42bb033ce8bc2dab9a26c3d93b4f3e8736c1650eca9ad"
+      "sha256": "ef1a22ab9a181877698171cd3c25f52c52110d2ff7ce144e0b2352351ac04209"
     },
     {
       "scenario": "details-dark",
@@ -200,7 +219,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "b27f59fb6658a339087859a3497b30363940d194e54ec5d1f02a2852f96da110"
+      "sha256": "be632a0fff2e11badaf396282eed056dd0610c72c42339eee55a858de0414465"
     },
     {
       "scenario": "ijpl-editor",
@@ -209,7 +228,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "648046bc724deb25e604155271309aef083c661724d5077e6fe295f8ed3b0407"
+      "sha256": "99d9d7fbc0fbf4652909e9a2fed140378ad74fd606680b574da3840925d145ca"
     },
     {
       "scenario": "ijpl-ui",
@@ -236,7 +255,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "85f8c584eaf22223f71d24d02c903eda84f8eb3219c955cedd8da4760097065a"
+      "sha256": "41e24584bfd5b532114229c66408d6bec7b2565ed6514ccc1c859c7e3b0d407c"
     },
     {
       "scenario": "recording-ijpl",
@@ -245,7 +264,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "922744ec13e1e51136cbbe7aaf278496e85b5af21894b7cd17d2d0a53306e3ee"
+      "sha256": "ae704b14bbaf4c72742c5fbd086fbddc45a660f1d0a3690f195567615befbdea"
     },
     {
       "scenario": "live-standalone",
@@ -254,7 +273,7 @@
       "logicalHeight": 854,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "33f7ccad23d76f68c68fb076436b671c4d8b5195ce0aa0033172b52384cda419"
+      "sha256": "dc420d0c1ecb6fba8f6e9ef30dfaa2ba0e257cd8a086173f940ad98559bb5ced"
     },
     {
       "scenario": "live-ijpl",
@@ -263,7 +282,7 @@
       "logicalHeight": 854,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "06c0bdddff0d126a450a3feae6b428b3999daa7d633b1e38c803e2a4e4d14361"
+      "sha256": "c8f8fa7025b78f88b4fec0e17da15bf31bffc171484b195b7dfb7b5928a29205"
     }
   ]
 }
