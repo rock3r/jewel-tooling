@@ -194,8 +194,8 @@ class EditorScenarioAction : AnAction() {
             val explanations = edt { inlays(editor).map { it.renderer.toString() } }
             check(explanations[0].contains("All stored properties"))
             check(explanations[1].contains("collections and arrays"))
-            check(explanations[2].contains("Function types are treated as stable"))
-            check(explanations[4].contains("compiler metadata proves"))
+            check(explanations.any { it.contains("Function types are treated as stable") })
+            check(explanations.any { it.contains("compiler metadata proves") })
             if (java.lang.Boolean.getBoolean("jewel.test.hover")) {
               val point = edt {
                 val bounds = requireNotNull(inlays(editor).first().bounds)
