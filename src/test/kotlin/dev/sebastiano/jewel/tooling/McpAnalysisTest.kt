@@ -26,14 +26,8 @@ class McpAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
   override fun setUp() {
     super.setUp()
     PsiTestUtil.addSourceContentToRoots(module, myFixture.tempDirFixture.findOrCreateDir(""))
-    val stdlib = File(System.getProperty("jewel.tooling.stdlib"))
-    val stdlibCopy =
-      com.intellij.openapi.util.io.FileUtil.createTempFile("kotlin-stdlib", ".jar", true)
-    com.intellij.openapi.util.Disposer.register(testRootDisposable) {
-      com.intellij.openapi.util.io.FileUtil.delete(stdlibCopy)
-    }
-    stdlibCopy.writeBytes(stdlib.readBytes())
-    PsiTestUtil.addLibrary(module, "kotlin-stdlib", stdlibCopy.parent, stdlibCopy.name)
+    val stdlib = kotlinStdlibJar(testRootDisposable)
+    PsiTestUtil.addLibrary(module, "kotlin-stdlib", stdlib.parent, stdlib.name)
     val binary = File(System.getProperty("jewel.tooling.compilerFixtures"))
     PsiTestUtil.addLibrary(module, "compiler-fixtures", binary.parent, binary.name)
     myFixture.addFileToProject(

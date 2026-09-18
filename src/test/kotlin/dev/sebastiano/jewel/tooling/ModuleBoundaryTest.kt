@@ -6,6 +6,8 @@ import com.intellij.testFramework.fixtures.JavaCodeInsightFixtureTestCase
 import java.io.File
 
 class ModuleBoundaryTest : JavaCodeInsightFixtureTestCase() {
+  private lateinit var stdlib: File
+
   override fun tuneFixture(
     builder: com.intellij.testFramework.builders.JavaModuleFixtureBuilder<*>
   ) {
@@ -14,7 +16,7 @@ class ModuleBoundaryTest : JavaCodeInsightFixtureTestCase() {
 
   override fun setUp() {
     super.setUp()
-    val stdlib = File(System.getProperty("jewel.tooling.stdlib"))
+    stdlib = kotlinStdlibJar(testRootDisposable)
     PsiTestUtil.addLibrary(module, "kotlin-stdlib", stdlib.parent, stdlib.name)
   }
 
@@ -32,7 +34,6 @@ class ModuleBoundaryTest : JavaCodeInsightFixtureTestCase() {
         root,
       )
     try {
-      val stdlib = File(System.getProperty("jewel.tooling.stdlib"))
       PsiTestUtil.addLibrary(other, "kotlin-stdlib", stdlib.parent, stdlib.name)
       WriteCommandAction.runWriteCommandAction(project) {
         val file = root.createChildData(this, "ExternalModel.kt")

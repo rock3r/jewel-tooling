@@ -38,7 +38,7 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     com.intellij.openapi.application.WriteAction.run<RuntimeException> {
       StabilityInlayMigration.migrate()
     }
-    val stdlib = File(System.getProperty("jewel.tooling.stdlib"))
+    val stdlib = kotlinStdlibJar(testRootDisposable)
     PsiTestUtil.addLibrary(module, "kotlin-stdlib", stdlib.parent, stdlib.name)
     val binaryFixtures = File(System.getProperty("jewel.tooling.compilerFixtures"))
     val fixtureCopy =
