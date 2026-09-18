@@ -25,7 +25,10 @@ enum class RecordingError {
 class RecordingFormatException(val code: RecordingError, cause: Throwable? = null) :
   IOException(code.name, cause)
 
-/** Reads and writes schema 1. The reader closes its input, including on cancellation. */
+/**
+ * Reads and writes supported recording schemas. The reader closes its input, including on
+ * cancellation.
+ */
 @ApiStatus.Experimental
 object RecordingCodec {
   private const val JSON_DEPTH = 8
@@ -154,8 +157,8 @@ object RecordingCodec {
       var session = ""
       var target: CaptureTarget? = null
       var duration = 0L
-      var status: CaptureStatus? = null
-      var reason: StopReason? = null
+      var status: String? = null
+      var reason: String? = null
       var capabilities: List<String>? = null
       var fidelity: CaptureFidelity? = null
       var sites: List<TraceSite>? = null
@@ -185,8 +188,8 @@ object RecordingCodec {
           "sessionId" -> session = string()
           "target" -> target = target()
           "durationNs" -> duration = long()
-          "status" -> status = CaptureStatus.valueOf(string())
-          "stopReason" -> reason = StopReason.valueOf(string())
+          "status" -> status = string()
+          "stopReason" -> reason = string()
           "capabilities" -> capabilities = array(RecordingLimits.CAPABILITIES.size) { string() }
           "fidelity" -> fidelity = fidelity()
           "sites" -> sites = array(RecordingLimits.SITES) { site() }
@@ -195,7 +198,8 @@ object RecordingCodec {
         }
       }
       if (
-        schema != RecordingLimits.SCHEMA_VERSION || collector != RecordingLimits.COLLECTOR_VERSION
+        schema !in 1..RecordingLimits.SCHEMA_VERSION ||
+          collector != RecordingLimits.COLLECTOR_VERSION
       )
         throw RecordingFormatException(RecordingError.UNSUPPORTED_VERSION)
       val capabilitiesList = checkNotNull(capabilities)
@@ -204,8 +208,8 @@ object RecordingCodec {
         session,
         checkNotNull(target),
         duration,
-        checkNotNull(status),
-        checkNotNull(reason),
+        CaptureStatus.valueOf(checkNotNull(status)),
+        StopReason.valueOf(checkNotNull(reason)),
         checkNotNull(fidelity),
         checkNotNull(sites),
         checkNotNull(threads),

@@ -167,11 +167,21 @@ internal class DetailsScenario {
         )
     }
     await("action popup opened") { edt { detailsPanel() != null } }
+    dismissWithEdit(editor, project)
+  }
+
+  private suspend fun dismissWithEdit(editor: Editor, project: Project) {
     // Changing text while details are open dismisses the stale snapshot.
     edt {
       WriteCommandAction.runWriteCommandAction(project) {
         editor.document.insertString(editor.document.textLength, "\n")
-        PsiDocumentManager.getInstance(project).commitAllDocuments()
+      }
+    }
+    await("popup edit committed") {
+      edt {
+        val documents = PsiDocumentManager.getInstance(project)
+        documents.isCommitted(editor.document) &&
+          documents.getPsiFile(editor.document)?.text == editor.document.text
       }
     }
     await("edit dismissed popup") { edt { detailsPanel() == null } }

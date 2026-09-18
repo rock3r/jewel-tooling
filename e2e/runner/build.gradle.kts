@@ -49,6 +49,7 @@ tasks.test {
   )
   systemProperty("jewel.test.retina", providers.gradleProperty("retina").getOrElse("false"))
   systemProperty("jewel.test.ideBuild", libs.versions.ideaBuild.get())
+  providers.gradleProperty("testIdePath").orNull?.let { systemProperty("jewel.test.idePath", it) }
   systemProperty(
     "jewel.test.artifacts",
     layout.buildDirectory.dir("artifacts").get().asFile.absolutePath,

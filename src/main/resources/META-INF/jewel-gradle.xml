@@ -1,0 +1,6 @@
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <projectService serviceInterface="dev.sebastiano.jewel.tooling.InspectionGradleSupport"
+      serviceImplementation="dev.sebastiano.jewel.tooling.GradleInspectionSupport"/>
+  </extensions>
+</idea-plugin>

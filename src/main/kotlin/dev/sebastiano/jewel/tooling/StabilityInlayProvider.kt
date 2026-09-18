@@ -1,18 +1,24 @@
 package dev.sebastiano.jewel.tooling
 
-import com.intellij.codeInsight.hints.declarative.HintFormat
-import com.intellij.codeInsight.hints.declarative.InlayHintsCollector
-import com.intellij.codeInsight.hints.declarative.InlayHintsProvider
-import com.intellij.codeInsight.hints.declarative.InlayTreeSink
-import com.intellij.codeInsight.hints.declarative.InlineInlayPosition
-import com.intellij.codeInsight.hints.declarative.SharedBypassCollector
+import com.intellij.codeInsight.hints.ChangeListener
+import com.intellij.codeInsight.hints.FactoryInlayHintsCollector
+import com.intellij.codeInsight.hints.ImmediateConfigurable
+import com.intellij.codeInsight.hints.InlayGroup
+import com.intellij.codeInsight.hints.InlayHintsCollector
+import com.intellij.codeInsight.hints.InlayHintsProvider
+import com.intellij.codeInsight.hints.InlayHintsSink
+import com.intellij.codeInsight.hints.NoSettings
+import com.intellij.codeInsight.hints.SettingsKey
+import com.intellij.codeInsight.hints.presentation.InlayPresentation
 import com.intellij.openapi.diagnostic.ControlFlowException
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.project.DumbService
 import com.intellij.psi.PsiElement
 import com.intellij.psi.PsiFile
+import com.intellij.util.ui.JBUI
 import java.util.concurrent.CancellationException
+import javax.swing.JPanel
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
@@ -20,41 +26,43 @@ internal class StabilityInlayProvider(
   private val analyzeFunction: (KtNamedFunction) -> List<ParameterHint> = {
     StabilityAnalysis.hints(it)
   }
-) : InlayHintsProvider {
-  private companion object {
-    const val TOOLTIP_COLUMNS = 72
-  }
+) : InlayHintsProvider<NoSettings> {
+  override val key = SettingsKey<NoSettings>(ID)
+  override val name: String
+    get() = JewelToolingBundle.message("hints.name")
 
-  private fun wrapTooltip(text: String): String =
-    text.lineSequence().joinToString("\n") { line ->
-      buildString {
-        var column = 0
-        for (word in line.split(' ')) {
-          if (column > 0) {
-            if (column + word.length + 1 > TOOLTIP_COLUMNS) {
-              append('\n')
-              column = 0
-            } else {
-              append(' ')
-              column++
-            }
-          }
-          append(word)
-          column += word.length
-        }
-      }
+  override val description: String
+    get() = JewelToolingBundle.message("hints.description")
+
+  override val group = InlayGroup.TYPES_GROUP
+  override val previewText =
+    """
+    package androidx.compose.runtime
+    annotation class Composable
+    @Composable fun Row(title: String, items: List<String>) {}
+    """
+      .trimIndent()
+
+  override fun createSettings() = NoSettings()
+
+  override fun createConfigurable(settings: NoSettings) =
+    object : ImmediateConfigurable {
+      override fun createComponent(listener: ChangeListener) = JPanel()
     }
 
-  override fun createCollector(file: PsiFile, editor: Editor): InlayHintsCollector? {
+  @Suppress("ReturnCount") // Indexing has no analysis session; skip compiled files separately.
+  override fun getCollectorFor(
+    file: PsiFile,
+    editor: Editor,
+    settings: NoSettings,
+    sink: InlayHintsSink,
+  ): InlayHintsCollector? {
     if (file !is KtFile || file.isCompiled || DumbService.isDumb(file.project)) return null
-    return object : SharedBypassCollector {
-      // A failed function must not suppress sibling hints; cancellation is rethrown below.
+    return object : FactoryInlayHintsCollector(editor) {
       @Suppress("TooGenericExceptionCaught", "ReturnCount")
-      override fun collectFromElement(element: PsiElement, sink: InlayTreeSink) {
-        val function = element as? KtNamedFunction ?: return
-        // Cheap syntax gate; the analyzer resolves annotation identities (including import
-        // aliases).
-        if (function.annotationEntries.isEmpty()) return
+      override fun collect(element: PsiElement, editor: Editor, sink: InlayHintsSink): Boolean {
+        val function = element as? KtNamedFunction ?: return true
+        if (function.annotationEntries.isEmpty()) return true
         val hints =
           try {
             analyzeFunction(function)
@@ -63,22 +71,53 @@ internal class StabilityInlayProvider(
               throw exception
             Logger.getInstance(StabilityInlayProvider::class.java)
               .warn("Compose stability analysis failed", exception)
-            return
+            return true
           }
         for (hint in hints) {
           val label = JewelToolingBundle.message(hint.assessment.stability.messageKey)
-          sink.addPresentation(
-            InlineInlayPosition(hint.offset, relatedToPrevious = true),
-            tooltip =
-              wrapTooltip(
-                JewelToolingBundle.message("hint.tooltip", hint.name, label, hint.assessment.reason)
+          val text = factory.smallTextWithoutBackground(label)
+          val icon = factory.icon(StabilityStateIcon(hint.assessment) { editor.colorsScheme })
+          val content =
+            factory.seq(
+              factory.inset(icon, top = maxOf(0, (text.height - icon.height) / 2)),
+              factory.inset(text, left = JBUI.scale(2)),
+            )
+          val tooltip = StabilityPresentation.tooltip(hint, editor.colorsScheme)
+          val presentation =
+            StabilityHintPresentation(
+              label,
+              tooltip,
+              factory.withTooltip(
+                tooltip,
+                factory.inset(
+                  content,
+                  left = JBUI.scale(3),
+                  right = JBUI.scale(3),
+                  top = maxOf(0, (editor.lineHeight - content.height) / 2),
+                ),
               ),
-            hintFormat = HintFormat.default,
-          ) {
-            text(label)
-          }
+            )
+          sink.addInlineElement(hint.offset, true, presentation, false)
         }
+        return true
       }
     }
   }
+
+  companion object {
+    const val ID = "jewel.compose.stability"
+  }
+}
+
+internal class StabilityHintPresentation(
+  val label: String,
+  val tooltip: String,
+  private val delegate: InlayPresentation,
+) : InlayPresentation by delegate {
+  override fun updateState(previousPresentation: InlayPresentation): Boolean =
+    delegate.updateState(
+      (previousPresentation as? StabilityHintPresentation)?.delegate ?: previousPresentation
+    )
+
+  override fun toString(): String = "JewelStability[$label]$tooltip"
 }

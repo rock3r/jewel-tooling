@@ -1,26 +1,43 @@
 # Contributing
 
-Jewel Tooling provides conservative static stability estimates for Kotlin composable parameters. Unsupported analysis should return unknown with an explanation.
+Use JDK 25, Python 3.10+, and the checked-in Gradle wrapper.
+Gradle provisions the pinned compilation toolchains. The first build needs network access for dependencies and the IDE distribution.
+Bazelisk and a graphical session are required only for the integration workflows.
+Keep dependency versions pinned and use public repositories. Local Maven repositories are not supported.
 
-Use the checked-in Gradle wrapper and JDK 21 for the plugin. The E2E runner and standalone fixture use JDK 25. Keep dependency versions pinned and use public repositories; local Maven repositories are not supported.
-
-Run `./gradlew :test :buildPlugin` before proposing a change. Add a regression case for a changed verdict, reason, or editor behavior. Keep all user-visible strings in the resource bundle. Do not retain Analysis API symbols beyond their session. Preserve cancellation and the bounded analysis budget.
-
-Changes to capture inputs require new screenshots and an updated provenance manifest in the same pull request. Follow the capture runbook in the user guide. Screenshots must come from real test-owned windows at the documented device scale.
-
-Describe the observable change and validation in your pull request. Contributions are licensed under Apache 2.0.
-
-The full local validation commands are:
+Start with [AGENTS.md](AGENTS.md). Use the [architecture](docs/architecture.md),
+[conventions](docs/conventions.md), [testing](docs/testing.md), and [static analysis](docs/static-analysis.md) guides for implementation work.
+The [user guide](docs/user-guide.md) describes supported behavior.
 
 ```sh
-./gradlew :test :ktfmtCheck :detekt :e2e:driver-plugin:ktfmtCheck :e2e:driver-plugin:detekt :e2e:runner:ktfmtCheck :e2e:runner:detekt :buildPlugin :verifyPluginStructure :verifyPlugin
-./gradlew -p fixtures/standalone test ktfmtCheck detekt
-python3 -m unittest discover -s scripts -p 'test_*.py'
-python3 scripts/prepare-distribution.py
-python3 scripts/verify-artifacts.py --images
-python3 scripts/check-doc-links.py
+python3 scripts/validate.py fast
+python3 scripts/validate.py full
 ```
 
-See the [user guide](docs/user-guide.md#run-the-end-to-end-tests) for the real Gradle and Bazel editor scenarios. The root checks include the Bazel fixture's Kotlin sources. Test-only suppressions keep sequential UI scenarios together and forward failures across thread/process boundaries; do not use them to hide production warnings.
+Inspect `git status --short` before and after work. Keep unrelated edits intact.
+Report checks that fail before your change separately from regressions.
+Do not change existing implementation files owned by concurrent tasks without coordination.
+Use `.plans/` for local proposals. Do not link public documents to that ignored directory.
 
-For a release, update `pluginVersion` in `gradle.properties`, validate, and tag that commit as `v<pluginVersion>`. The release workflow rejects a mismatched tag or multiple production ZIPs. It publishes an unsigned plugin ZIP and checksum after CI passes.
+## Agent discovery
+
+`AGENTS.md` is the canonical instruction file. `CLAUDE.md` links to it.
+Each directory under `.claude/skills/` links to the matching directory under `.agents/skills/`.
+Edit only the canonical files. No hook or global permission configuration is required.
+
+On Windows, enable Developer Mode or use an account that can create symbolic links.
+Clone with `git -c core.symlinks=true clone <repository-url>`.
+For an existing checkout, enable `core.symlinks` locally and restore only the tracked symlinks after preserving local edits.
+A plain file containing a link target is not a working symlink. Run `python3 scripts/check-doc-links.py` to verify discovery.
+Use `python` if your Python 3 installation does not provide `python3`.
+The validation runner uses `gradlew.bat` on Windows. Headed Windows E2E and capture are not yet validated.
+
+## Review and publication
+
+Keep changes small enough to review. Include the behavior change, validation evidence, and known limits.
+Do not include private project names, machine paths, credentials, or connection tokens in public artifacts.
+Contributions use the repository's [Apache 2.0 license](LICENSE).
+
+This checkout is under local review. Do not push, publish, create a repository or PR, or release without user approval.
+Public publication also waits for the user to test the plugin.
+The existing release workflow reacts to tags; do not create or push a release tag during local validation.

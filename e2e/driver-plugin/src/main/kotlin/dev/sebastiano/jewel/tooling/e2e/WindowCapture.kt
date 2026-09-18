@@ -16,6 +16,22 @@ import javax.swing.SwingUtilities
 
 /** macOS captures exclude occluding applications; Xvfb CI uses its isolated framebuffer. */
 internal object WindowCapture {
+  fun activate(window: Window) {
+    edt {
+      window.toFront()
+      window.requestFocus()
+    }
+    if (System.getProperty("os.name").startsWith("Mac")) {
+      native {
+        Foundation.invoke(
+          Foundation.invoke("NSApplication", "sharedApplication"),
+          "activateIgnoringOtherApps:",
+          true,
+        )
+      }
+    }
+  }
+
   fun capture(window: Window, region: Rectangle, robot: RobotDriver): BufferedImage {
     if (!System.getProperty("os.name").startsWith("Mac"))
       return robot.screenshotAtDeviceScale(region)

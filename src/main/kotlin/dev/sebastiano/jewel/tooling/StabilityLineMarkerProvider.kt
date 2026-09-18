@@ -8,7 +8,6 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.markup.GutterIconRenderer
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.DumbService
-import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.PsiElement
 import java.util.concurrent.CancellationException
 import org.jetbrains.kotlin.psi.KtFile
@@ -48,12 +47,7 @@ internal class StabilityLineMarkerProvider(
           null
         } ?: continue
       val summary = StabilityPresentation.counts(report)
-      val tooltip =
-        JewelToolingBundle.message(
-          "summary.tooltip",
-          StringUtil.escapeXmlEntities(report.name),
-          StringUtil.escapeXmlEntities(summary),
-        )
+      val tooltip = StabilityPresentation.summaryTooltip(report)
       result +=
         LineMarkerInfo(
           element,

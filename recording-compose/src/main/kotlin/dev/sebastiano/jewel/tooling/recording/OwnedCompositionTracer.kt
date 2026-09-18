@@ -36,6 +36,10 @@ class OwnedCompositionTracer internal constructor() : CompositionTracer, AutoClo
       current.stop()
     }
 
+  /** Reads the attached recording without ending an active capture. */
+  fun snapshot(): Recording =
+    synchronized(lock) { checkNotNull(recorder) { "No recording is attached" }.snapshot() }
+
   override fun isTraceInProgress(): Boolean = recorder?.isActive == true
 
   override fun traceEventStart(key: Int, dirty1: Int, dirty2: Int, info: String) {

@@ -6,28 +6,48 @@
     Static Compose stability hints for Jewel and Compose UI authors.
     Shows parameter stability estimates and explanations in imported Gradle and Bazel projects.
     Static hints need no application instrumentation or build plugin.
-    Import saved recordings from explicitly configured development targets.
+    Run a local development configuration with bundled inspection support and view live Compose trace events.
+    Export recordings and inspect saved sessions.
   ]]></description>
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.java</depends>
   <depends>org.jetbrains.kotlin</depends>
+  <depends optional="true" config-file="jewel-gradle.xml">com.intellij.gradle</depends>
   <resource-bundle>messages.JewelToolingBundle</resource-bundle>
   <extensions defaultExtensionNs="org.jetbrains.kotlin">
     <supportsKotlinPluginMode supportsK1="false" supportsK2="true"/>
   </extensions>
   <extensions defaultExtensionNs="com.intellij">
+    <executor implementation="dev.sebastiano.jewel.tooling.ComposeInspectionExecutor"/>
+    <programRunner implementation="dev.sebastiano.jewel.tooling.ComposeInspectionProgramRunner"/>
+    <toolWindow id="Compose Inspection" anchor="bottom" factoryClass="dev.sebastiano.jewel.tooling.LiveInspectionToolWindowFactory" icon="/icons/compose.svg"/>
     <codeInsight.lineMarkerProvider language="kotlin" implementationClass="dev.sebastiano.jewel.tooling.StabilityLineMarkerProvider"/>
-    <codeInsight.declarativeInlayProvider
-      language="kotlin"
+    <codeInsight.inlayProvider language="kotlin"
       implementationClass="dev.sebastiano.jewel.tooling.StabilityInlayProvider"
-      isEnabledByDefault="true"
-      group="TYPES_GROUP"
-      providerId="jewel.compose.stability"
-      bundle="messages.JewelToolingBundle"
-      nameKey="hints.name"
-      descriptionKey="hints.description"/>
+      settingsKeyId="jewel.compose.stability" isEnabledByDefault="true"/>
+    <postStartupActivity implementation="dev.sebastiano.jewel.tooling.StabilityInlayMigration"/>
+    <postStartupActivity implementation="dev.sebastiano.jewel.tooling.ComposeInspectionShortcuts"/>
+    <colorSettingsPage implementation="dev.sebastiano.jewel.tooling.StabilityColorSettingsPage"/>
+    <additionalTextAttributes scheme="Default" file="colorSchemes/JewelToolingLight.xml"/>
+    <additionalTextAttributes scheme="Light" file="colorSchemes/JewelToolingLight.xml"/>
+    <additionalTextAttributes scheme="Classic Light" file="colorSchemes/JewelToolingLight.xml"/>
+    <additionalTextAttributes scheme="Darcula" file="colorSchemes/JewelToolingDark.xml"/>
+    <additionalTextAttributes scheme="Dark" file="colorSchemes/JewelToolingDark.xml"/>
+    <additionalTextAttributes scheme="Islands Dark" file="colorSchemes/JewelToolingDark.xml"/>
+    <additionalTextAttributes scheme="Darcula Contrast" file="colorSchemes/JewelToolingDark.xml"/>
   </extensions>
   <actions>
+    <action id="JewelTooling.ComposeInspectionShortcuts" class="com.intellij.openapi.actionSystem.EmptyAction" internal="true">
+      <keyboard-shortcut keymap="$default" first-keystroke="control alt shift F10"/>
+      <keyboard-shortcut keymap="Mac OS X" first-keystroke="control alt shift R"/>
+      <keyboard-shortcut keymap="Mac OS X 10.5+" first-keystroke="control alt shift R"/>
+    </action>
+    <action id="JewelTooling.McpServer" class="dev.sebastiano.jewel.tooling.McpServerAction" icon="AllIcons.Nodes.Plugin">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+    <action id="JewelTooling.InstallInspection" class="dev.sebastiano.jewel.tooling.InstallInspectionSupportAction" icon="AllIcons.Nodes.Plugin">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
     <action id="JewelTooling.OpenRecording" class="dev.sebastiano.jewel.tooling.OpenRecordingAction">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
     </action>

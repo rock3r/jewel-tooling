@@ -26,15 +26,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
-      - name: Tests, static checks, and distribution verification
-        run: ./gradlew :test :ktfmtCheck :detekt :recording:test :recording:ktfmtCheck :recording:detekt :recording-compose:test :recording-compose:ktfmtCheck :recording-compose:detekt :test-fixtures:compiler-metadata:ktfmtCheck :test-fixtures:compiler-metadata:detekt :e2e:driver-plugin:ktfmtCheck :e2e:driver-plugin:detekt :e2e:runner:ktfmtCheck :e2e:runner:detekt :buildPlugin :verifyPluginStructure :verifyPlugin
-      - name: Packaging mutation tests
-        run: python3 -m unittest discover -s scripts -p 'test_*.py'
-      - name: Verify production ZIP and recorded Retina assets
-        run: |
-          python3 scripts/prepare-distribution.py
-          python3 scripts/verify-artifacts.py --images
-          python3 scripts/check-doc-links.py
+      - name: Full local and CI validation
+        run: python3 scripts/validate.py full
       - name: Production distribution
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -55,6 +48,12 @@ jobs:
             recording/build/test-results/
             recording-compose/build/reports/
             recording-compose/build/test-results/
+            agent/build/reports/
+            agent/build/test-results/
+            e2e/driver-plugin/build/reports/
+            e2e/runner/build/reports/
+            test-fixtures/compiler-metadata/build/reports/
+            fixtures/standalone/build/reports/detekt/
           if-no-files-found: warn
   e2e:
     runs-on: ubuntu-latest
@@ -79,16 +78,8 @@ jobs:
           bazelisk-cache: true
           repository-cache: true
           cache-save: ${{ github.event_name != 'pull_request' }}
-      - name: Build the real Bazel fixture and export its IDE model
-        run: |
-          ./gradlew :e2e:driver-plugin:exportFixtureSdk
-          python3 scripts/prepare-bazel-fixture.py
-      - name: Real Jewel standalone interaction
-        run: |
-          xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./gradlew -p fixtures/standalone test ktfmtCheck detekt
-          python3 scripts/verify-trace-markers.py fixtures/standalone/build/classes/kotlin/main
-      - name: Real editor assertions with Spectre capture
-        run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' ./gradlew :e2e:runner:test
+      - name: Real standalone and IJPL workflows with Spectre
+        run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' python3 scripts/validate.py e2e
       - name: E2E evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

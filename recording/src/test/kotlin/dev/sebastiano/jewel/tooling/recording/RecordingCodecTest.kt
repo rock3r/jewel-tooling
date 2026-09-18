@@ -31,21 +31,50 @@ class RecordingCodecTest {
   }
 
   @Test
+  fun legacyFinalAndLiveSnapshotsHaveSeparateFileRules() {
+    val legacy = sample().copy(schemaVersion = 1)
+    assertEquals(legacy, RecordingCodec.read(RecordingCodec.write(legacy).inputStream()))
+    val live = sample().copy(status = CaptureStatus.ACTIVE, stopReason = StopReason.NONE)
+    assertEquals(live, RecordingCodec.read(RecordingCodec.write(live).inputStream()))
+    assertThrows(IllegalArgumentException::class.java) { live.copy(schemaVersion = 1).validate() }
+    val directory = java.nio.file.Files.createTempDirectory("live-recording-test")
+    val path = directory.resolve("capture.json")
+    try {
+      assertThrows(RecordingFormatException::class.java) { RecordingFiles.writeNew(path, live) }
+      assertTrue(!java.nio.file.Files.exists(path))
+      java.nio.file.Files.write(path, RecordingCodec.write(live))
+      assertThrows(RecordingFormatException::class.java) { RecordingFiles.read(path) }
+    } finally {
+      java.nio.file.Files.deleteIfExists(path)
+      java.nio.file.Files.deleteIfExists(directory)
+    }
+  }
+
+  @Test
+  fun futureStatusReportsVersionBeforeEnumFailure() {
+    val text =
+      json().replace("STOPPED", "FUTURE").replace("\"schemaVersion\":2,", "").dropLast(1) +
+        ",\"schemaVersion\":3}"
+    val failure = assertThrows(RecordingFormatException::class.java) { read(text) }
+    assertEquals(RecordingError.UNSUPPORTED_VERSION, failure.code)
+  }
+
+  @Test
   fun completeRoundTripPreservesMasksAndLabels() {
     assertEquals(sample(), read(json()))
   }
 
   @Test
   fun arbitraryFieldOrderIsAccepted() {
-    val text = json().replace("\"schemaVersion\":1,", "").dropLast(1) + ",\"schemaVersion\":1}"
+    val text = json().replace("\"schemaVersion\":2,", "").dropLast(1) + ",\"schemaVersion\":2}"
     assertEquals(sample(), read(text))
   }
 
   @Test
   fun missingDuplicateAndUnknownFieldsAreRejected() {
-    rejected(json().replace("\"schemaVersion\":1,", ""))
-    rejected(json().replace("\"schemaVersion\":1", "\"schemaVersion\":1,\"schemaVersion\":1"))
-    rejected(json().replace("\"schemaVersion\":1", "\"unknown\":{},\"schemaVersion\":1"))
+    rejected(json().replace("\"schemaVersion\":2,", ""))
+    rejected(json().replace("\"schemaVersion\":2", "\"schemaVersion\":2,\"schemaVersion\":2"))
+    rejected(json().replace("\"schemaVersion\":2", "\"unknown\":{},\"schemaVersion\":2"))
     rejected(json().replace("\"build\":null,", ""))
     rejected(json().replace("\"key\":-7", "\"key\":-7,\"key\":-7"))
   }
@@ -54,7 +83,7 @@ class RecordingCodecTest {
   fun futureVersionsHaveADistinctError() {
     val failure =
       assertThrows(RecordingFormatException::class.java) {
-        read(json().replace("\"schemaVersion\":1", "\"schemaVersion\":2"))
+        read(json().replace("\"schemaVersion\":2", "\"schemaVersion\":3"))
       }
     assertEquals(RecordingError.UNSUPPORTED_VERSION, failure.code)
   }

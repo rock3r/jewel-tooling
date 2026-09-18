@@ -1,0 +1,11 @@
+<list>
+  <attributes/>
+  <colors>
+    <option name="JEWEL_STABILITY_STABLE_FILL" value="759880"/>
+    <option name="JEWEL_STABILITY_STABLE_BORDER" value="9AB7A3"/>
+    <option name="JEWEL_STABILITY_UNSTABLE_FILL" value="B37D80"/>
+    <option name="JEWEL_STABILITY_UNSTABLE_BORDER" value="D39C9F"/>
+    <option name="JEWEL_STABILITY_UNKNOWN_FILL" value="8192A7"/>
+    <option name="JEWEL_STABILITY_UNKNOWN_BORDER" value="A0B1C4"/>
+  </colors>
+</list>

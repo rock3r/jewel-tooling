@@ -5,6 +5,7 @@ import com.intellij.driver.sdk.singleProject
 import com.intellij.driver.sdk.waitForIndicators
 import com.intellij.driver.sdk.waitForProjectOpen
 import com.intellij.ide.starter.driver.engine.runIdeWithDriver
+import com.intellij.ide.starter.ide.installer.ExistingIdeInstaller
 import com.intellij.ide.starter.junit5.hyphenateWithClass
 import com.intellij.ide.starter.models.TestCase
 import com.intellij.ide.starter.plugins.PluginConfigurator
@@ -19,6 +20,26 @@ import org.junit.jupiter.api.Test
 
 class JewelTargetsTest {
   @Test
+  fun standaloneGradleMcp() {
+    runTarget("standalone", mcp = true)
+  }
+
+  @Test
+  fun bazelIjplMcp() {
+    runTarget("ijpl", mcp = true)
+  }
+
+  @Test
+  fun bazelIjplOneClickInspection() {
+    runTarget("ijpl", oneClick = true)
+  }
+
+  @Test
+  fun standaloneOneClickInspection() {
+    runTarget("standalone", oneClick = true)
+  }
+
+  @Test
   fun standaloneGradleEditor() {
     runTarget("standalone")
   }
@@ -28,8 +49,12 @@ class JewelTargetsTest {
     runTarget("ijpl")
   }
 
-  @Suppress("LongMethod") // Sequential setup, assertions and teardown form one E2E scenario.
-  private fun runTarget(target: String) {
+  @Suppress(
+    "LongMethod",
+    "CyclomaticComplexMethod",
+    "ComplexCondition",
+  ) // Keep each target scenario and teardown together.
+  private fun runTarget(target: String, oneClick: Boolean = false, mcp: Boolean = false) {
     val repository = Path.of(System.getProperty("jewel.test.repo"))
     val temporary = Files.createTempDirectory("jewel-$target-").toRealPath()
     val project =
@@ -61,13 +86,19 @@ class JewelTargetsTest {
       Files.createDirectories(
         Path.of(System.getProperty("jewel.test.artifacts"), "$target-${System.nanoTime()}")
       )
+    val liveEndpointFile = temporary.resolve("live-endpoint")
     val context =
       Starter.newContext(
           CurrentTestMethod.hyphenateWithClass(),
           TestCase(
             IdeaUltimateProductInit()
               .ideInfo
-              .copy(buildType = "release", buildNumber = System.getProperty("jewel.test.ideBuild")),
+              .copy(buildType = "release", buildNumber = System.getProperty("jewel.test.ideBuild"))
+              .let { info ->
+                val local = System.getProperty("jewel.test.idePath")
+                if (local == null) info
+                else info.copy(getInstaller = { ExistingIdeInstaller(Path.of(local)) })
+              },
             LocalProjectInfo(project),
           ),
         )
@@ -82,7 +113,15 @@ class JewelTargetsTest {
         }
         .applyVMOptionsPatch {
           addSystemProperty("jewel.test.output", output.toString())
+          addSystemProperty("jewel.test.mcp", mcp)
+          addSystemProperty("jewel.test.targetHome", temporary.resolve("target-ide").toString())
+          addSystemProperty("jewel.test.driverZip", System.getProperty("jewel.test.driverZip"))
+          addSystemProperty(
+            "jewel.test.fixtureZip",
+            repository.resolve("fixtures/ijpl/build/distributions/ijpl-fixture.zip").toString(),
+          )
           addSystemProperty("jewel.test.target", target)
+          addSystemProperty("jewel.test.liveEndpoint", liveEndpointFile.toString())
           addSystemProperty(
             "jewel.test.recording",
             repository.resolve("fixtures/standalone/build/capture/recording.json").toString(),
@@ -105,25 +144,57 @@ class JewelTargetsTest {
     context.runIdeWithDriver().useDriverAndCloseIde {
       waitForProjectOpen(timeout = 5.minutes)
       waitForIndicators(timeout = 5.minutes)
-      invokeGlobalBackendAction("JewelTooling.RunEditorScenario", singleProject(), now = false)
-      val deadline = System.nanoTime() + 960_000_000_000L
-      val result = output.resolve("result.txt")
-      while (!Files.exists(result) && System.nanoTime() < deadline) Thread.sleep(200)
-      check(Files.exists(result)) { "Scenario timed out; artifacts: $output" }
-      check(Files.readString(result).startsWith("PASS:")) { Files.readString(result) }
-      check(Files.size(output.resolve("editor-before.png")) > 0)
-      check(Files.size(output.resolve("model-roots.txt")) > 0)
-      check(Files.size(output.resolve("recording.png")) > 0)
-      check(Files.size(output.resolve("recording-evidence.txt")) > 0)
-      check(Files.readString(output.resolve("recording-lifecycle.txt")).startsWith("PASS:"))
-      check(Files.readString(output.resolve("navigation.txt")).startsWith("PASS:"))
-      check(Files.readString(output.resolve("recording-filter.txt")).startsWith("PASS:"))
-      if (target == "standalone") {
-        check(Files.size(output.resolve("explanation.png")) > 0)
-        check(Files.size(output.resolve("details-dark.png")) > 0)
-        check(Files.size(output.resolve("details-light.png")) > 0)
-      } else check(Files.size(output.resolve("ijpl-ui.png")) > 0)
-      Files.writeString(output.resolve("scenario.txt"), target)
+      var liveTarget: LiveStandaloneProcess? = null
+      try {
+        invokeGlobalBackendAction(
+          if (oneClick) "JewelTooling.RunLaunchScenario" else "JewelTooling.RunEditorScenario",
+          singleProject(),
+          now = false,
+        )
+        val deadline = System.nanoTime() + 960_000_000_000L
+        val result = output.resolve("result.txt")
+        while (!Files.exists(result) && System.nanoTime() < deadline) {
+          if (
+            !oneClick &&
+              target == "standalone" &&
+              liveTarget == null &&
+              Files.exists(output.resolve("live-start-request"))
+          ) {
+            liveTarget = LiveStandaloneProcess(repository, liveEndpointFile, output)
+            liveTarget.start()
+          }
+          Thread.sleep(200)
+        }
+        check(Files.exists(result)) { "Scenario timed out; artifacts: $output" }
+        check(Files.readString(result).startsWith("PASS:")) { Files.readString(result) }
+        if (mcp) {
+          check(Files.size(output.resolve("mcp-setup.png")) > 0)
+          check(Files.readString(output.resolve("mcp-evidence.txt")).startsWith("PASS:"))
+          return@useDriverAndCloseIde
+        }
+        if (oneClick) {
+          check(Files.size(output.resolve("one-click-live.png")) > 0)
+          return@useDriverAndCloseIde
+        }
+        check(Files.size(output.resolve("editor-before.png")) > 0)
+        check(Files.size(output.resolve("model-roots.txt")) > 0)
+        check(Files.size(output.resolve("recording.png")) > 0)
+        check(Files.size(output.resolve("recording-evidence.txt")) > 0)
+        check(Files.readString(output.resolve("recording-lifecycle.txt")).startsWith("PASS:"))
+        check(Files.readString(output.resolve("navigation.txt")).startsWith("PASS:"))
+        check(Files.readString(output.resolve("recording-filter.txt")).startsWith("PASS:"))
+        if (target == "standalone") {
+          check(Files.size(output.resolve("explanation.png")) > 0)
+          check(Files.size(output.resolve("details-dark.png")) > 0)
+          check(Files.size(output.resolve("details-light.png")) > 0)
+        } else check(Files.size(output.resolve("ijpl-ui.png")) > 0)
+        check(Files.readString(output.resolve("live-evidence.txt")).startsWith("PASS:"))
+        check(Files.size(output.resolve("live-recording.png")) > 0)
+        check(Files.readString(output.resolve("live-unload.txt")).startsWith("PASS:"))
+        Files.writeString(output.resolve("scenario.txt"), target)
+      } finally {
+        liveTarget?.close()
+      }
     }
   }
 

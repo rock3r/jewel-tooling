@@ -1,9 +1,11 @@
 package dev.sebastiano.jewel.tooling.e2e
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer
 import com.intellij.codeInsight.daemon.impl.DaemonCodeAnalyzerEx
-import com.intellij.codeInsight.hints.declarative.DeclarativeInlayHintsSettings
-import com.intellij.codeInsight.hints.declarative.impl.DeclarativeInlayHintsPassFactory
-import com.intellij.codeInsight.hints.declarative.impl.inlayRenderer.DeclarativeInlayRenderer
+import com.intellij.codeInsight.daemon.impl.InlayHintsPassFactoryInternal
+import com.intellij.codeInsight.hints.InlayHintsSettings
+import com.intellij.codeInsight.hints.NoSettings
+import com.intellij.codeInsight.hints.SettingsKey
 import com.intellij.ide.ui.LafManager
 import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.actionSystem.AnAction
@@ -50,6 +52,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import org.jetbrains.kotlin.idea.KotlinLanguage
 import org.jetbrains.plugins.gradle.settings.DistributionType
 import org.jetbrains.plugins.gradle.settings.GradleProjectSettings
 import org.jetbrains.plugins.gradle.settings.GradleSettings
@@ -128,9 +131,18 @@ class EditorScenarioAction : AnAction() {
               }
               Files.writeString(output.resolve("model-roots.txt"), evidence)
             }
+            if (java.lang.Boolean.getBoolean("jewel.test.mcp")) {
+              stage = "MCP setup and analysis"
+              McpScenario().inspect(project, editor, output)
+              Files.writeString(output.resolve("result.txt"), "PASS: MCP setup and static analysis")
+              return@withTimeout
+            }
             stage = "initial inlays"
             await(stage) { labels(editor) == expected }
             val frame = edt { requireNotNull(WindowManager.getInstance().getFrame(project)) }
+            WindowCapture.activate(frame)
+            stage = "IDE activation for native tooltips"
+            await(stage) { ApplicationManager.getApplication().isActive }
             val robot = RobotDriver.synthetic(rootWindow = frame)
             stage = "highlighting completed"
             await(stage) {
@@ -179,9 +191,7 @@ class EditorScenarioAction : AnAction() {
                 "scaleX":${transform.scaleX},
                 "scaleY":${transform.scaleY}}""",
             )
-            val explanations = edt {
-              inlays(editor).map { it.renderer.toInlayData().single().tooltip.orEmpty() }
-            }
+            val explanations = edt { inlays(editor).map { it.renderer.toString() } }
             check(explanations[0].contains("All stored properties"))
             check(explanations[1].contains("collections and arrays"))
             check(explanations[2].contains("compiler metadata proves"))
@@ -194,7 +204,41 @@ class EditorScenarioAction : AnAction() {
                   origin.y + bounds.y + bounds.height / 2,
                 )
               }
+              val listener =
+                object : com.intellij.openapi.editor.event.EditorMouseMotionListener {
+                  override fun mouseMoved(
+                    event: com.intellij.openapi.editor.event.EditorMouseEvent
+                  ) {
+                    Files.writeString(
+                      output.resolve("hover-event.txt"),
+                      "point=${event.mouseEvent.point}; area=${event.area}; " +
+                        "inlay=${event.inlay?.offset}; consumed=${event.isConsumed}; " +
+                        "active=${ApplicationManager.getApplication().isActive}",
+                    )
+                  }
+                }
+              edt { editor.addEditorMouseMotionListener(listener) }
+              WindowCapture.activate(frame)
+              await("IDE active before hover") { ApplicationManager.getApplication().isActive }
+              val away = edt { editor.contentComponent.locationOnScreen }
+              robot.moveTo(away.x + 1, away.y + 1)
               robot.moveTo(point.x, point.y)
+              delay(PAINT_SETTLE_MS)
+              edt { editor.removeEditorMouseMotionListener(listener) }
+              Files.writeString(
+                output.resolve("hover-visible.txt"),
+                edt {
+                  Window.getWindows()
+                    .filter { it.isShowing }
+                    .flatMap { visibleText(it) }
+                    .joinToString("\n")
+                },
+              )
+              ImageIO.write(
+                WindowCapture.capture(frame, region, robot),
+                "png",
+                output.resolve("hover-debug.png").toFile(),
+              )
               stage = "hint tooltip"
               await(stage) {
                 edt {
@@ -219,20 +263,51 @@ class EditorScenarioAction : AnAction() {
                 val start = editor.document.text.indexOf("val title")
                 check(start >= 0)
                 editor.document.replaceString(start, start + "val".length, "var")
-                PsiDocumentManager.getInstance(project).commitAllDocuments()
               }
+              PsiDocumentManager.getInstance(project).commitDocument(editor.document)
             }
             stage = "inlays after source edit"
-            await(stage) { labels(editor) == (listOf("unstable") + expected.drop(1)) }
+            await(stage) {
+              val actual = labels(editor)
+              Files.writeString(output.resolve("edited-inlays.txt"), actual.joinToString(","))
+              Files.writeString(
+                output.resolve("edit-refresh-state.txt"),
+                edt {
+                  val focus = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
+                  val documents = PsiDocumentManager.getInstance(project)
+                  val file = documents.getPsiFile(editor.document)
+                  "active=${ApplicationManager.getApplication().isActive}; " +
+                    "focus=${focus.focusOwner?.javaClass?.name}; window=${focus.activeWindow?.javaClass?.name}; " +
+                    "showing=${editor.contentComponent.isShowing}; " +
+                    "committed=${documents.isCommitted(editor.document)}; " +
+                    "documentVar=${editor.document.text.contains("class Greeting(var title")}; " +
+                    "psiVar=${file?.text?.contains("class Greeting(var title")}; " +
+                    "dumb=${DumbService.isDumb(project)}"
+                },
+              )
+              actual == (listOf("unstable") + expected.drop(1))
+            }
             edt {
-              DeclarativeInlayHintsSettings.getInstance().setProviderEnabled(PROVIDER, false)
-              DeclarativeInlayHintsPassFactory.scheduleRecompute(editor, project)
+              InlayHintsSettings.instance()
+                .changeHintTypeStatus(
+                  SettingsKey<NoSettings>(PROVIDER),
+                  KotlinLanguage.INSTANCE,
+                  false,
+                )
+              InlayHintsPassFactoryInternal.clearModificationStamp(editor)
+              DaemonCodeAnalyzer.getInstance(project).restart(this)
             }
             stage = "disabled inlay provider"
             await(stage) { labels(editor).isEmpty() }
             edt {
-              DeclarativeInlayHintsSettings.getInstance().setProviderEnabled(PROVIDER, true)
-              DeclarativeInlayHintsPassFactory.scheduleRecompute(editor, project)
+              InlayHintsSettings.instance()
+                .changeHintTypeStatus(
+                  SettingsKey<NoSettings>(PROVIDER),
+                  KotlinLanguage.INSTANCE,
+                  true,
+                )
+              InlayHintsPassFactoryInternal.clearModificationStamp(editor)
+              DaemonCodeAnalyzer.getInstance(project).restart(this)
             }
             stage = "enabled inlay provider"
             await(stage) { labels(editor) == (listOf("unstable") + expected.drop(1)) }
@@ -246,11 +321,11 @@ class EditorScenarioAction : AnAction() {
               stage = "Jewel tool window interaction"
               val automator = ComposeAutomator.inProcess(robotDriver = robot)
               automator.waitForNode(tag = "items-count")
-              automator.waitForVisualIdle()
+              automator.waitForIdle()
               check(automator.findOneByTestTag("items-count")?.text == "Items: 1")
               edt { recording.startTarget() }
               automator.click(requireNotNull(automator.findOneByTestTag("add-item")))
-              automator.waitForVisualIdle()
+              automator.waitForIdle()
               check(automator.findOneByTestTag("items-count")?.text == "Items: 2")
               edt { recording.stopTarget() }
               recording.exportTarget(output.resolve("recording.json"))
@@ -284,6 +359,12 @@ class EditorScenarioAction : AnAction() {
               recording.inspect(recordingPath, robot, output)
               stage = "recording unload and reload"
               recording.verifyUnloadReload(recordingPath, output)
+              stage = "live capture controls"
+              val live = LiveScenario(project)
+              live.run(robot, output)
+              stage = "unload with live connection"
+              recording.verifyUnloadReload(output.resolve("live-recording.json"), output)
+              live.verifyTargetStopped(output)
             }
             Files.writeString(
               output.resolve("result.txt"),
@@ -301,7 +382,7 @@ class EditorScenarioAction : AnAction() {
   }
 
   @Suppress("TooGenericExceptionCaught") // Forward all callback failures to the waiting test.
-  private fun importGradle(project: Project) {
+  internal fun importGradle(project: Project) {
     val completed = CompletableFuture<Unit>()
     edt {
       val settings = GradleSettings.getInstance(project)
@@ -356,13 +437,13 @@ class EditorScenarioAction : AnAction() {
 
   private fun inlays(editor: Editor) =
     editor.inlayModel
-      .getInlineElementsInRange(0, editor.document.textLength, DeclarativeInlayRenderer::class.java)
-      .filter { it.renderer.providerId == PROVIDER }
+      .getInlineElementsInRange(0, editor.document.textLength)
+      .filter { it.renderer.toString().contains("JewelStability[") }
       .sortedBy { it.offset }
 
   private fun labels(editor: Editor): List<String> = edt {
     inlays(editor).map {
-      it.renderer.toInlayData().single().toString().removePrefix("<# ").removeSuffix(" #>")
+      it.renderer.toString().substringAfter("JewelStability[").substringBefore("]")
     }
   }
 

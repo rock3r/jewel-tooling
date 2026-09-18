@@ -156,6 +156,26 @@ class RecordingReportPanelTest : BasePlatformTestCase() {
     )
   }
 
+  fun testLiveRefreshPreservesSelectionFilterAndNumericSort() {
+    val first = recording()
+    val panel = RecordingReportPanel(RecordingReportData(first, first.summarize()))
+    val components = descendants(panel.component)
+    val table = components.filterIsInstance<JTable>().single()
+    val filter = components.filterIsInstance<JTextField>().single()
+    table.rowSorter.toggleSortOrder(1)
+    table.setRowSelectionInterval(0, 0)
+    assertEquals("Second", table.getValueAt(table.selectedRow, 0))
+    val next = first.copy(events = first.events + TraceEvent(2, 1, 41, 49, 0, 0))
+    panel.update(RecordingReportData(next, next.summarize()))
+    assertEquals("Second", table.getValueAt(table.selectedRow, 0))
+    assertEquals(2, table.getValueAt(table.selectedRow, 1))
+    filter.text = "Second"
+    panel.update(RecordingReportData(first, first.summarize()))
+    assertEquals("Second", filter.text)
+    assertEquals(1, table.rowCount)
+    assertEquals(1, table.getValueAt(0, 1))
+  }
+
   private fun descendants(component: Component): List<Component> =
     listOf(component) +
       ((component as? Container)?.components?.flatMap { descendants(it) }).orEmpty()

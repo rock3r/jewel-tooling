@@ -17,6 +17,7 @@ object RecordingFiles {
    * exports can leave an incomplete file when the file system cannot confirm its identity.
    */
   fun writeNew(path: Path, recording: Recording, checkCanceled: () -> Unit = {}) {
+    requireTerminal(recording)
     val bytes = RecordingCodec.write(recording, checkCanceled)
     checkCanceled()
     val channel = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
@@ -41,7 +42,12 @@ object RecordingFiles {
 
   /** Reads a local file without using its contents as paths or commands. */
   fun read(path: Path, checkCanceled: () -> Unit = {}): Recording =
-    RecordingCodec.read(Files.newInputStream(path), checkCanceled)
+    RecordingCodec.read(Files.newInputStream(path), checkCanceled).also(::requireTerminal)
+
+  private fun requireTerminal(recording: Recording) {
+    if (recording.status == CaptureStatus.ACTIVE)
+      throw RecordingFormatException(RecordingError.INVALID_FORMAT)
+  }
 
   private fun fileKey(path: Path): Any? =
     Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).fileKey()

@@ -7,3 +7,9 @@ include(":e2e:driver-plugin", ":e2e:runner")
 include(":test-fixtures:compiler-metadata")
 
 include(":recording", ":recording-compose")
+
+include(":agent-bridge")
+
+include(":agent-premain", ":agent")
+
+include(":mcp-bootstrap", ":mcp-runtime")

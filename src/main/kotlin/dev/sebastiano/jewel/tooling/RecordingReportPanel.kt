@@ -1,6 +1,7 @@
 package dev.sebastiano.jewel.tooling
 
 import com.intellij.ui.DocumentAdapter
+import com.intellij.ui.OnePixelSplitter
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
 import com.intellij.ui.components.JBTextField
@@ -16,7 +17,6 @@ import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
-import javax.swing.JSplitPane
 import javax.swing.ListSelectionModel
 import javax.swing.RowFilter
 import javax.swing.event.DocumentEvent
@@ -27,7 +27,11 @@ import javax.swing.text.DefaultCaret
 
 private const val NANOS_PER_MILLISECOND = 1_000_000.0
 
-internal class RecordingReportPanel(private val data: RecordingReportData) {
+internal class RecordingReportPanel(
+  private var data: RecordingReportData,
+  private val embedded: Boolean = false,
+) {
+  private val summaryText = textArea("recording.summary")
   private val details = textArea("recording.site.details")
   private val model = SitesModel(data.sites)
   private val sorter = TableRowSorter(model)
@@ -69,45 +73,46 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
   val component: JComponent =
     JPanel(BorderLayout(0, JBUI.scale(10))).apply {
       border = JBUI.Borders.empty(8)
-      preferredSize = JBUI.size(960, 640)
-      minimumSize = JBUI.size(600, 480)
-      add(
-        JBScrollPane(
-          textArea("recording.summary").apply {
-            rows = 6
-            text = summary(data.recording)
-          }
-        ),
-        BorderLayout.NORTH,
-      )
+      preferredSize = JBUI.size(960, if (embedded) 360 else 640)
+      minimumSize = if (embedded) JBUI.size(200, 150) else JBUI.size(600, 480)
+      if (!embedded)
+        add(
+          JBScrollPane(
+            summaryText.apply {
+              rows = 6
+              text = summary(data.recording)
+            }
+          ),
+          BorderLayout.NORTH,
+        )
       add(
         JPanel(BorderLayout(0, JBUI.scale(FILTER_GAP))).apply {
           add(filterBar(), BorderLayout.NORTH)
           add(
-            JSplitPane(JSplitPane.VERTICAL_SPLIT, JBScrollPane(table), JBScrollPane(details))
-              .apply {
-                resizeWeight = 0.7
-                dividerLocation = JBUI.scale(220)
-                border = null
-              },
+            OnePixelSplitter(true, 0.7f).apply {
+              firstComponent = JBScrollPane(table)
+              secondComponent = JBScrollPane(details)
+              border = null
+            },
             BorderLayout.CENTER,
           )
         },
         BorderLayout.CENTER,
       )
-      add(
-        JBScrollPane(
-            textArea("recording.limits").apply {
-              text = JewelToolingBundle.message("recording.limit.description")
-            }
-          )
-          .apply {
-            preferredSize = JBUI.size(900, 100)
-            minimumSize = JBUI.size(100, 60)
-            border = null
-          },
-        BorderLayout.SOUTH,
-      )
+      if (!embedded)
+        add(
+          JBScrollPane(
+              textArea("recording.limits").apply {
+                text = JewelToolingBundle.message("recording.limit.description")
+              }
+            )
+            .apply {
+              preferredSize = JBUI.size(900, 100)
+              minimumSize = JBUI.size(100, 60)
+              border = null
+            },
+          BorderLayout.SOUTH,
+        )
     }
 
   val focus: JComponent
@@ -120,6 +125,33 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
       }
     )
     applyFilter()
+  }
+
+  /** Refreshes cumulative measurements while keeping the reader's table context. Call on EDT. */
+  fun update(next: RecordingReportData) {
+    val selectedId =
+      table.selectedRow
+        .takeIf { it >= 0 }
+        ?.let { data.sites[table.convertRowIndexToModel(it)].site.id }
+    val sameSession = next.recording.sessionId == data.recording.sessionId
+    val position = (table.parent as? javax.swing.JViewport)?.viewPosition
+    filtering = true
+    try {
+      data = next
+      model.replace(next.sites)
+      val index = if (sameSession) next.sites.indexOfFirst { it.site.id == selectedId } else -1
+      val visible = if (index >= 0) table.convertRowIndexToView(index) else -1
+      if (visible >= 0) table.setRowSelectionInterval(visible, visible)
+      else if (table.rowCount > 0) table.setRowSelectionInterval(0, 0) else table.clearSelection()
+      summaryText.text = summary(next.recording)
+      count.text =
+        JewelToolingBundle.message("recording.filter.count", table.rowCount, model.rowCount)
+    } finally {
+      filtering = false
+    }
+    showSelection()
+    if (position != null && sameSession)
+      (table.parent as? javax.swing.JViewport)?.viewPosition = position
   }
 
   private fun filterBar(): JComponent =
@@ -182,8 +214,13 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
       details.text =
         if (table.rowCount == 0)
           JewelToolingBundle.message(
-            if (data.sites.isEmpty() && filter.text.isEmpty()) "recording.empty"
-            else "recording.filter.empty"
+            if (data.sites.isEmpty() && filter.text.isEmpty()) {
+              if (
+                data.recording.status == dev.sebastiano.jewel.tooling.recording.CaptureStatus.ACTIVE
+              )
+                "live.empty"
+              else "recording.empty"
+            } else "recording.filter.empty"
           )
         else ""
       return
@@ -262,8 +299,14 @@ internal class RecordingReportPanel(private val data: RecordingReportData) {
   }
 }
 
-private class SitesModel(private val sites: List<SiteSummary>) : AbstractTableModel() {
-  private val normalized = sites.map { it.site.info.lowercase(Locale.ROOT) }
+private class SitesModel(private var sites: List<SiteSummary>) : AbstractTableModel() {
+  private var normalized = sites.map { it.site.info.lowercase(Locale.ROOT) }
+
+  fun replace(next: List<SiteSummary>) {
+    sites = next
+    normalized = next.map { it.site.info.lowercase(Locale.ROOT) }
+    fireTableDataChanged()
+  }
 
   fun matches(row: Int, query: String): Boolean = normalized[row].contains(query)
 

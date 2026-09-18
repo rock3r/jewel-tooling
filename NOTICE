@@ -4,3 +4,22 @@ Copyright 2026 Jewel Tooling contributors
 Inspired by Skydoves Compose Stability Analyzer:
 https://github.com/skydoves/compose-stability-analyzer
 Jewel Tooling is an independent implementation and does not contain code from that project.
+
+The plugin icon uses the Jewel logo from JetBrains/intellij-community.
+Copyright 2000-2025 JetBrains s.r.o. and contributors.
+Licensed under the Apache License, Version 2.0.
+Only the SVG display dimensions were changed.
+
+The Compose Inspection icons use the IntelliJ UI Inspector Compose glyph
+and the Run play mark from JetBrains platform run icons.
+Copyright 2000-2025 JetBrains s.r.o. and contributors.
+Licensed under the Apache License, Version 2.0.
+
+The bundled inspection agent includes ASM, Kotlin, Jackson Core, and JetBrains annotations.
+Their license and notice files are retained under META-INF/licenses in the agent JAR.
+ASM is licensed under BSD-3-Clause. The other dependencies use Apache-2.0.
+
+The isolated MCP runtime includes the Model Context Protocol Kotlin SDK, Ktor,
+Kotlin libraries, SLF4J, and JetBrains annotations.
+The SDK license text and dependency notices are retained under META-INF/licenses
+in the MCP runtime JAR. The SDK text includes its Apache-2.0/MIT transition notice.

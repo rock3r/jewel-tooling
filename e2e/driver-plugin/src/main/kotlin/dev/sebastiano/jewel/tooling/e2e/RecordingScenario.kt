@@ -147,19 +147,17 @@ internal class RecordingScenario(private val project: Project, private val scope
       output.resolve("recording-filter.txt"),
       "PASS: literal filter and Clear restored $totalSites sites",
     )
-    for (id in listOf(KeyEvent.KEY_PRESSED, KeyEvent.KEY_RELEASED)) {
-      java.awt.Toolkit.getDefaultToolkit()
-        .systemEventQueue
-        .postEvent(
-          KeyEvent(
-            window,
-            id,
-            System.currentTimeMillis(),
-            0,
-            KeyEvent.VK_ESCAPE,
-            KeyEvent.CHAR_UNDEFINED,
-          )
-        )
+    edt {
+      // Exercise the native Escape binding without depending on another app's keyboard focus.
+      val root = window.rootPane
+      val key = javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)
+      val binding =
+        checkNotNull(root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(key))
+      val action = checkNotNull(root.actionMap.get(binding))
+      check(action.isEnabled)
+      action.actionPerformed(
+        java.awt.event.ActionEvent(root, java.awt.event.ActionEvent.ACTION_PERFORMED, "Escape")
+      )
     }
     await("Escape closed the initial report") { edt { reportWindow() == null } }
   }

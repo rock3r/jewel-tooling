@@ -1,6 +1,7 @@
 package example
 
 import dev.sebastiano.jewel.tooling.recording.CaptureTarget
+import dev.sebastiano.jewel.tooling.recording.LiveCompositionHost
 import dev.sebastiano.jewel.tooling.recording.OwnedCompositionTracer
 import dev.sebastiano.jewel.tooling.recording.Recording
 import dev.sebastiano.jewel.tooling.recording.RecordingFiles
@@ -10,13 +11,41 @@ import javax.swing.SwingUtilities
 /** Owns tracing only in this disposable development target. */
 object FixtureRecording {
   private val tracer = OwnedCompositionTracer.installOwnedDispatcher()
+  private var live: LiveCompositionHost? = null
   @Volatile private var completed: Recording? = null
 
   fun initialize() {
     check(SwingUtilities.isEventDispatchThread())
   }
 
+  fun isLiveCapturing(): Boolean = tracer.isTraceInProgress()
+
+  fun openLiveConnection(): String {
+    check(SwingUtilities.isEventDispatchThread())
+    if (live == null)
+      live =
+        LiveCompositionHost(
+          tracer,
+          CaptureTarget("Jewel standalone development target"),
+          SwingUtilities::invokeLater,
+        )
+    return checkNotNull(live).connectionString
+  }
+
+  fun closeLiveConnection() {
+    live?.close()
+    live = null
+  }
+
+  fun copyLiveConnection() {
+    val value = openLiveConnection()
+    java.awt.Toolkit.getDefaultToolkit()
+      .systemClipboard
+      .setContents(java.awt.datatransfer.StringSelection(value), null)
+  }
+
   fun start() {
+    check(live == null)
     check(SwingUtilities.isEventDispatchThread())
     completed = null
     tracer.startRecording(

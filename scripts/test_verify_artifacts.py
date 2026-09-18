@@ -15,9 +15,30 @@ spec.loader.exec_module(verify)
 
 class DistributionTest(unittest.TestCase):
     def make_zip(self, extra_jar_entry=None, extra_zip_entry=None, shared=True, extra_shared_entry=None):
+        bootstrap = self.mcp_jar(bootstrap=True)
+        runtime = self.mcp_jar()
         jar = io.BytesIO()
         with zipfile.ZipFile(jar, "w") as output:
+            output.writestr("mcp/jewel-tooling-version.txt", "0.1.0")
+            output.writestr("mcp/bootstrap.jar", bootstrap)
+            output.writestr("mcp/runtime.jar", runtime)
+            output.writestr("skills/jewel-compose-analysis/SKILL.md", "test skill")
+            output.writestr("mcp/tools.json", json.dumps([{"name": name} for name in
+                ("jewel_status", "jewel_composables", "jewel_analyze", "jewel_explain")]))
             output.writestr("META-INF/plugin.xml", "<idea-plugin/>")
+            output.writestr("META-INF/jewel-gradle.xml", "<idea-plugin/>")
+            for asset, entry in [("inspection-agent.jar", "agent/Premain"), ("bridge.jar", "bridge/TraceBridge")]:
+                nested = io.BytesIO()
+                with zipfile.ZipFile(nested, "w") as target:
+                    target.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0")
+                    target.writestr("META-INF/LICENSE", "Apache License, Version 2.0")
+                    target.writestr("dev/sebastiano/jewel/tooling/" + entry + ".class", b"fixture")
+                output.writestr("agent/" + asset, nested.getvalue())
+            output.writestr("META-INF/pluginIcon.svg", '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"/>')
+            output.writestr("icons/compose.svg", '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>')
+            output.writestr("icons/compose_dark.svg", '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>')
+            output.writestr("icons/runWithCompose.svg", '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>')
+            output.writestr("icons/runWithCompose_dark.svg", '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"/>')
             output.writestr("META-INF/LICENSE", "Apache License, Version 2.0")
             output.writestr("META-INF/NOTICE", "Jewel Tooling")
             output.writestr("messages/JewelToolingBundle.properties", "hint.stable=stable")
@@ -35,11 +56,32 @@ class DistributionTest(unittest.TestCase):
         archive = io.BytesIO()
         with zipfile.ZipFile(archive, "w") as output:
             output.writestr("jewel-tooling/lib/jewel-tooling-0.1.0.jar", jar.getvalue())
+            output.writestr("jewel-tooling/lib/mcp-bootstrap.jar", bootstrap)
             if shared:
                 output.writestr("jewel-tooling/lib/recording-0.1.0.jar", recording.getvalue())
             if extra_zip_entry:
                 output.writestr(extra_zip_entry, b"unexpected")
         return archive.getvalue()
+
+    def mcp_jar(self, bootstrap=False, extra=None):
+        data = io.BytesIO()
+        with zipfile.ZipFile(data, "w") as jar:
+            jar.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0")
+            jar.writestr("META-INF/LICENSE", "Apache License, Version 2.0")
+            names = ("bootstrap/Discovery", "bootstrap/Boot") if bootstrap else ("runtime/RuntimeServer", "runtime/Bridge")
+            for name in names:
+                jar.writestr("dev/sebastiano/jewel/tooling/mcp/" + name + ".class", b"fixture")
+            if extra:
+                jar.writestr(extra, b"unexpected")
+        return data.getvalue()
+
+    def test_mcp_isolation_rejects_ide_compose_and_tests(self):
+        for entry in ("com/intellij/openapi/project/Project.class", "androidx/compose/runtime/Composer.class",
+                      "dev/sebastiano/jewel/tooling/mcp/runtime/RuntimeServerTest.class", "private-data.txt"):
+            with self.subTest(entry=entry), self.assertRaises(ValueError):
+                verify.verify_mcp_jar(self.mcp_jar(extra=entry))
+        with self.assertRaises(ValueError):
+            verify.verify_mcp_jar(self.mcp_jar(bootstrap=True, extra="kotlin/Unit.class"), bootstrap=True)
 
     def verify_bytes(self, contents):
         with tempfile.TemporaryDirectory() as directory:
@@ -85,7 +127,7 @@ class ScreenshotProvenanceTest(unittest.TestCase):
         images = self.root / "docs/images"
         images.mkdir(parents=True)
         entries = []
-        for scenario in ["standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light", "recording-standalone", "recording-ijpl"]:
+        for scenario in ["standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light", "recording-standalone", "recording-ijpl", "live-standalone", "live-ijpl", "mcp-standalone", "mcp-ijpl"]:
             data = b"\x89PNG\r\n\x1a\n" + b"\0" * 8 + struct.pack(">II", 200, 100)
             relative = "docs/images/" + scenario + ".png"
             (self.root / relative).write_bytes(data)

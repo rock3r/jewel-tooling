@@ -14,7 +14,7 @@ object RecordingLimits {
   const val LABEL_BYTES = 1_024
   const val FILE_BYTES = 8 * 1_024 * 1_024
   const val DURATION_NS = 3_600_000_000_000L
-  const val SCHEMA_VERSION = 1
+  const val SCHEMA_VERSION = 2
   const val COLLECTOR_VERSION = "1"
   const val CLOCK_UNIT = "nanoseconds"
   val CAPABILITIES: Set<String> =
@@ -23,6 +23,7 @@ object RecordingLimits {
 
 @ApiStatus.Experimental
 enum class CaptureStatus {
+  ACTIVE,
   STOPPED,
   TRUNCATED,
   FAILED,
@@ -30,6 +31,7 @@ enum class CaptureStatus {
 
 @ApiStatus.Experimental
 enum class StopReason {
+  NONE,
   MANUAL,
   EVENT_LIMIT,
   SITE_LIMIT,
@@ -38,6 +40,7 @@ enum class StopReason {
   STRING_LIMIT,
   DURATION_LIMIT,
   CLOCK_FAILURE,
+  TARGET_UNAVAILABLE,
   COUNTER_LIMIT,
 }
 
@@ -93,7 +96,8 @@ data class Recording(
 ) {
   fun validate(checkCanceled: () -> Unit = {}) {
     checkCanceled()
-    require(schemaVersion == RecordingLimits.SCHEMA_VERSION)
+    require(schemaVersion in 1..RecordingLimits.SCHEMA_VERSION)
+    require(schemaVersion != 1 || status != CaptureStatus.ACTIVE)
     require(collectorVersion == RecordingLimits.COLLECTOR_VERSION)
     require(clockUnit == RecordingLimits.CLOCK_UNIT)
     require(capabilities == RecordingLimits.CAPABILITIES)
@@ -138,13 +142,21 @@ data class Recording(
   private fun validateStatus() {
     require(
       when (status) {
+        CaptureStatus.ACTIVE -> stopReason == StopReason.NONE
         CaptureStatus.STOPPED -> stopReason == StopReason.MANUAL
-        CaptureStatus.FAILED -> stopReason == StopReason.CLOCK_FAILURE
+        CaptureStatus.FAILED ->
+          stopReason in setOf(StopReason.CLOCK_FAILURE, StopReason.TARGET_UNAVAILABLE)
         CaptureStatus.TRUNCATED ->
-          stopReason != StopReason.MANUAL && stopReason != StopReason.CLOCK_FAILURE
+          stopReason != StopReason.NONE &&
+            stopReason != StopReason.MANUAL &&
+            stopReason != StopReason.CLOCK_FAILURE &&
+            stopReason != StopReason.TARGET_UNAVAILABLE
       }
     )
-    require(status == CaptureStatus.STOPPED || fidelity.laterActivityUnrecorded)
+    require(
+      fidelity.laterActivityUnrecorded ==
+        (status == CaptureStatus.TRUNCATED || status == CaptureStatus.FAILED)
+    )
   }
 }
 

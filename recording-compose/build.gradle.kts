@@ -22,6 +22,7 @@ dependencies {
   compileOnly("org.jetbrains:annotations:26.0.2")
   testImplementation(kotlin("stdlib"))
   testImplementation(project(":recording"))
+  testImplementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
   testImplementation("androidx.compose.runtime:runtime-desktop:1.11.1")
   testImplementation("junit:junit:${libs.versions.junit4.get()}")
 }

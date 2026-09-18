@@ -34,7 +34,30 @@ def main():
     if initial != {"inputs": inputs, "sourceSha256": digest}:
         raise ValueError("Capture sources changed during this run; recapture")
     selected = {}
+    launches = {}
+    mcp = {}
     for folder in (ROOT / "e2e/runner/build/artifacts").iterdir():
+        mcp_metadata = folder / "mcp-capture.json"
+        if mcp_metadata.is_file():
+            capture = json.loads(mcp_metadata.read_text())
+            if capture.get("captureId") == args.capture_id:
+                for evidence in ("result.txt", "mcp-evidence.txt", "mcp-client-install-evidence.txt"):
+                    if not (folder / evidence).read_text().startswith("PASS:"):
+                        raise ValueError("Cannot promote a failed MCP scenario")
+                target = (folder / "mcp-target.txt").read_text()
+                if target in mcp:
+                    raise ValueError("Ambiguous duplicate MCP capture for " + target)
+                mcp[target] = folder
+        launch_metadata = folder / "one-click-live-capture.json"
+        if launch_metadata.is_file():
+            launch = json.loads(launch_metadata.read_text())
+            if launch.get("captureId") == args.capture_id:
+                if not (folder / "result.txt").read_text().startswith("PASS:"):
+                    raise ValueError("Cannot promote a failed launch scenario")
+                target = (folder / "one-click-target.txt").read_text()
+                if target in launches:
+                    raise ValueError("Ambiguous duplicate launch capture for " + target)
+                launches[target] = folder
         metadata = folder / "capture.json"
         if not metadata.is_file():
             continue
@@ -51,8 +74,14 @@ def main():
         selected[target] = folder
     if set(selected) != {"standalone", "ijpl"}:
         raise ValueError("Both target editor scenarios must pass in this capture run")
+    if set(launches) != {"standalone", "ijpl"}:
+        raise ValueError("Both production launch scenarios must pass in this capture run")
+    if set(mcp) != {"standalone", "ijpl"}:
+        raise ValueError("Both production MCP scenarios must pass in this capture run")
     standalone = ROOT / "fixtures/standalone/build/capture"
     captures = [
+        ("mcp-standalone", mcp["standalone"], "mcp-setup.png", "mcp-capture.json"),
+        ("mcp-ijpl", mcp["ijpl"], "mcp-setup.png", "mcp-capture.json"),
         ("standalone-editor", selected["standalone"], "editor-before.png", "capture.json"),
         ("explanation", selected["standalone"], "explanation.png", "capture.json"),
         ("details-dark", selected["standalone"], "details-dark.png", "details-dark-capture.json"),
@@ -62,6 +91,8 @@ def main():
         ("standalone-ui", standalone, "standalone-ui.png", "capture.json"),
         ("recording-standalone", selected["standalone"], "recording.png", "recording-capture.json"),
         ("recording-ijpl", selected["ijpl"], "recording.png", "recording-capture.json"),
+        ("live-standalone", launches["standalone"], "one-click-live.png", "one-click-live-capture.json"),
+        ("live-ijpl", launches["ijpl"], "one-click-live.png", "one-click-live-capture.json"),
     ]
     images = []
     pending = []
@@ -81,7 +112,7 @@ def main():
         shutil.copyfile(source, target)
     (destination / "manifest.json").write_text(json.dumps({"schemaVersion": 1, "captureId": args.capture_id, "inputs": inputs, "sourceSha256": digest, "images": images}, indent=2) + "\n")
     verify.verify_images(ROOT)
-    print("Promoted nine verified native Retina captures")
+    print("Promoted thirteen verified native Retina captures")
 
 
 if __name__ == "__main__":

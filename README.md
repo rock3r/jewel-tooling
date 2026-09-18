@@ -1,8 +1,8 @@
 # Jewel Tooling
 
-An IntelliJ Platform plugin for **Compose stability hints and saved recordings**.
+An IntelliJ Platform plugin for **Compose stability hints and live inspection**.
 Works with Jewel and other Compose Kotlin code in imported **Gradle and Bazel** projects.
-Static hints need no application dependency, agent, or server. Recordings use an explicit development target.
+Static hints need no application dependency, agent, or server. Live inspection launches your selected development configuration with a bundled agent.
 
 ## Try it
 
@@ -19,15 +19,19 @@ To use an existing compatible IDE distribution instead of downloading one:
 ./gradlew -PlocalIdePath=/path/to/IntelliJIDEA.app/Contents :buildPlugin
 ```
 
-Install `build/distributions/jewel-tooling-0.3.3.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
+Install `build/distributions/jewel-tooling-0.4.0.zip` through **Settings > Plugins > gear > Install Plugin from Disk**.
 Open a project, allow indexing to finish, then open a Kotlin file with `@Composable` functions.
 Hints appear after parameter types; hover for a short explanation. Click a function’s gutter indicator
 for a summary and a scrollable explanation of every input, or use **Inspect Compose Stability** in Find Action.
 Toggle inline hints under
 **Settings > Editor > Inlay Hints**, under Kotlin; look for **Compose parameter stability**.
+Small circles show each state. A border identifies compiler-confirmed type stability.
+Change their fill and border colours under **Settings > Editor > Color Scheme > Jewel Tooling**.
 The Gradle wrapper here builds the IDE plugin; it imposes no build system on the project being analyzed.
 
 Read the [user guide](docs/user-guide.md) for explanations, limits, screenshots, and test commands.
+To use the same static analysis from a coding agent, open **Tools > Compose Analysis MCP Server…**.
+Enable access, select your client, and click **Install**. See the [MCP setup guide](docs/agents/mcp.md) for supported clients and instructions.
 
 ![Compose parameter stability hints](docs/images/standalone-editor.png)
 
@@ -57,11 +61,13 @@ The plugin does not read stability configuration files, infer inherited/custom s
 
 ## Development
 
+Start with [Contributing](CONTRIBUTING.md) for setup, validation commands, and repository-local agent workflows.
+
 `src/test` uses real IDE Kotlin resolution with small Compose annotation fixtures. It covers aliases, false annotation matches,
 mutable and immutable shapes, generic substitution, delegates, bounded inference, and parameter hint placement.
 A separate fixture module compiles real dependency classes with the pinned Compose compiler; tests also reject malformed or unsupported metadata.
 The implementation keeps Kotlin Analysis API objects inside their analysis session, checks cancellation, and runs through
-IntelliJ's declarative inlay pass rather than doing analysis on the event dispatch thread.
+IntelliJ's presentation-based inlay pass. Analysis runs outside the event dispatch thread.
 
 ## Inspect a recording
 
@@ -69,10 +75,13 @@ Choose **Tools > Open Compose Recording** to inspect a saved session.
 The report shows observed executions, inclusive duration, threads, and recording limits.
 It does not infer skips, invalidation causes, argument values, or composition instances.
 
-The experimental recorder runs only in explicitly configured development targets.
-Both the Jewel Standalone fixture and the disposable Bazel/IJPL fixture produce real Compose recordings.
-The authoring plugin imports local files. It does not install a tracer in the IDE or open a server.
-See the [recording instructions](docs/user-guide.md#inspect-a-recording) for setup and limits.
+Select your application's run configuration, then choose **Run with Compose Inspection** from the run widget, gutter, or **Run** menu.
+The plugin installs support when needed, launches the target, connects, and starts capture when Compose loads.
+You do not need to add a recorder dependency or copy a connection token.
+
+Use a local Gradle `JavaExec`, Application, or Kotlin JVM configuration with JDK 21 or newer.
+For a Bazel-built IntelliJ plugin, select the project's existing Application configuration for its development IDE.
+See the [own-project instructions](docs/user-guide.md#run-your-project-with-live-inspection) for setup and limits.
 
 ## Inspiration and license
 

@@ -1,18 +1,36 @@
 {
   "schemaVersion": 1,
-  "captureId": "platform-metadata-20260917-a",
+  "captureId": "5f7c75ca-6735-4c5d-a0cd-b2a29a8c1d68",
   "inputs": [
+    "agent-bridge/build.gradle.kts",
+    "agent-bridge/src/main/java/dev/sebastiano/jewel/tooling/bridge/TraceBridge.java",
+    "agent-premain/build.gradle.kts",
+    "agent-premain/src/main/java/dev/sebastiano/jewel/tooling/agent/Premain.java",
+    "agent/build.gradle.kts",
+    "agent/src/main/kotlin/dev/sebastiano/jewel/tooling/agent/AgentRuntime.kt",
+    "agent/src/main/kotlin/dev/sebastiano/jewel/tooling/agent/ComposeTransformer.kt",
+    "agent/src/main/resources/META-INF/licenses/ASM.txt",
+    "agent/src/test/kotlin/dev/sebastiano/jewel/tooling/agent/AgentForkTest.kt",
+    "agent/src/test/kotlin/dev/sebastiano/jewel/tooling/agent/ComposeTransformerTest.kt",
     "build.gradle.kts",
+    "config/detekt-compose.yml",
     "config/detekt.yml",
     "e2e/driver-plugin/build.gradle.kts",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/DetailsScenario.kt",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/EditorScenarioAction.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/InspectionTargetActivity.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/LaunchScenarioAction.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/LiveScenario.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/McpClientSetupScenario.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/McpScenario.kt",
+    "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/NativeInspectionConfiguration.kt",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/RecordingScenario.kt",
     "e2e/driver-plugin/src/main/kotlin/dev/sebastiano/jewel/tooling/e2e/WindowCapture.kt",
     "e2e/driver-plugin/src/main/resources/META-INF/plugin.xml",
     "e2e/runner/build.gradle.kts",
     "e2e/runner/src/test/kotlin/dev/sebastiano/jewel/tooling/e2e/EditorSpikeTest.kt",
     "e2e/runner/src/test/kotlin/dev/sebastiano/jewel/tooling/e2e/JewelTargetsTest.kt",
+    "e2e/runner/src/test/kotlin/dev/sebastiano/jewel/tooling/e2e/LiveStandaloneProcess.kt",
     "fixtures/ijpl/.bazelrc",
     "fixtures/ijpl/.bazelversion",
     "fixtures/ijpl/BUILD.bazel",
@@ -28,21 +46,47 @@
     "fixtures/standalone/src/main/kotlin/example/Example.kt",
     "fixtures/standalone/src/main/kotlin/example/FixtureRecording.kt",
     "fixtures/standalone/src/main/kotlin/example/Main.kt",
+    "fixtures/standalone/src/test/kotlin/example/InspectionStandaloneTarget.kt",
+    "fixtures/standalone/src/test/kotlin/example/LiveStandaloneTarget.kt",
     "fixtures/standalone/src/test/kotlin/example/StandaloneScenarioTest.kt",
     "gradle.properties",
     "gradle/libs.versions.toml",
     "gradle/wrapper/gradle-wrapper.jar",
     "gradle/wrapper/gradle-wrapper.properties",
+    "mcp-bootstrap/build.gradle.kts",
+    "mcp-bootstrap/src/main/java/dev/sebastiano/jewel/tooling/mcp/bootstrap/Boot.java",
+    "mcp-bootstrap/src/main/java/dev/sebastiano/jewel/tooling/mcp/bootstrap/Discovery.java",
+    "mcp-bootstrap/src/test/java/dev/sebastiano/jewel/tooling/mcp/bootstrap/DiscoveryTest.java",
+    "mcp-runtime/build.gradle.kts",
+    "mcp-runtime/src/main/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/Bridge.kt",
+    "mcp-runtime/src/main/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/RequestJobs.kt",
+    "mcp-runtime/src/main/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/RuntimeServer.kt",
+    "mcp-runtime/src/main/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/RuntimeSession.kt",
+    "mcp-runtime/src/main/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/VersionTransport.kt",
+    "mcp-runtime/src/main/resources/META-INF/licenses/mcp-sdk-LICENSE.txt",
+    "mcp-runtime/src/main/resources/META-INF/licenses/mcp-sdk-SOURCE.txt",
+    "mcp-runtime/src/test/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/BridgeTest.kt",
+    "mcp-runtime/src/test/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/RequestJobsTest.kt",
+    "mcp-runtime/src/test/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/RuntimeIsolationTest.kt",
+    "mcp-runtime/src/test/kotlin/dev/sebastiano/jewel/tooling/mcp/runtime/RuntimeServerTest.kt",
     "recording-compose/build.gradle.kts",
+    "recording-compose/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/LiveCompositionHost.kt",
     "recording-compose/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/OwnedCompositionTracer.kt",
+    "recording-compose/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/LiveCompositionHostTest.kt",
     "recording-compose/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/OwnedCompositionTracerTest.kt",
     "recording/build.gradle.kts",
     "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/CompositionRecorder.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/InspectionFiles.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/LiveConnection.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/LiveRecordingServer.kt",
+    "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/LiveTargetStatus.kt",
     "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/Recording.kt",
     "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingCodec.kt",
     "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingFiles.kt",
     "recording/src/main/kotlin/dev/sebastiano/jewel/tooling/recording/SiteSummary.kt",
     "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/CompositionRecorderTest.kt",
+    "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/InspectionFilesTest.kt",
+    "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/LiveConnectionTest.kt",
     "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingCodecTest.kt",
     "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingFilesTest.kt",
     "recording/src/test/kotlin/dev/sebastiano/jewel/tooling/recording/RecordingSummaryTest.kt",
@@ -54,26 +98,74 @@
     "settings.gradle.kts",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/BinaryMetadataReader.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/CompilerStabilityMetadata.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/GradleInspectionSupport.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionActions.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionGradleSupport.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionLaunchService.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/InspectionSupport.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/JewelToolingBundle.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionPanel.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionService.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/LiveInspectionToolWindowFactory.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpAnalysisFacade.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpClientInstaller.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpClientProcess.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpClientSetupController.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpClientSetupPanel.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpClients.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpCodexInstall.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpConfigFiles.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpJsonConfig.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpOwnedConfig.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpRequestHandler.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpResults.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpServerAction.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/McpServerService.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/OpenRecordingAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportDialog.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportPanel.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/RecordingReportService.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/ShowStabilityAction.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityAnalysis.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityColorSettingsPage.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityColors.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityDetailsService.kt",
+    "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityInlayMigration.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityInlayProvider.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityLineMarkerProvider.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityNavigation.kt",
     "src/main/kotlin/dev/sebastiano/jewel/tooling/StabilityPresentation.kt",
+    "src/main/resources/META-INF/jewel-gradle.xml",
     "src/main/resources/META-INF/plugin.xml",
-    "src/main/resources/inlayProviders/jewel.compose.stability/preview.kt",
+    "src/main/resources/META-INF/pluginIcon.svg",
+    "src/main/resources/colorSchemes/JewelToolingDark.xml",
+    "src/main/resources/colorSchemes/JewelToolingLight.xml",
+    "src/main/resources/mcp/jewel-tooling-version.txt",
+    "src/main/resources/mcp/tools.json",
     "src/main/resources/messages/JewelToolingBundle.properties",
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "ae55c7c28377d8036d40f34e729ee83ab24eb3316ecfd613cf4e2e1fa179f31f",
+  "sourceSha256": "87f26e9ad35aba2e9f18c3be57a69bc26f5644d03c54633ef790214cc014779e",
   "images": [
+    {
+      "scenario": "mcp-standalone",
+      "path": "docs/images/mcp-standalone.png",
+      "logicalWidth": 614,
+      "logicalHeight": 642,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "853e549c2cdb362c8abf1a7a6583b4057c945bdfdd0428624e6135b976a6fbed"
+    },
+    {
+      "scenario": "mcp-ijpl",
+      "path": "docs/images/mcp-ijpl.png",
+      "logicalWidth": 614,
+      "logicalHeight": 642,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "49d181ba1ca5ab897422e21c46f1bb6e54c0bacc1783fdf34594e4fb306a98fb"
+    },
     {
       "scenario": "standalone-editor",
       "path": "docs/images/standalone-editor.png",
@@ -81,7 +173,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "36b9cdce83ee8d21bb373b3da82ed64594470b1705fe3b871b0d56227e1a7e05"
+      "sha256": "e2b4c8ac9f99922882df8eaf9daac0372acef5465935f6b493eb2152331916c6"
     },
     {
       "scenario": "explanation",
@@ -90,7 +182,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "5fda985d052a5368416c08cf56b9de4e8d9777e770671c46124b19cc5d9435d0"
+      "sha256": "a5358f5102f5dab668d42bb033ce8bc2dab9a26c3d93b4f3e8736c1650eca9ad"
     },
     {
       "scenario": "details-dark",
@@ -99,7 +191,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "a860d910c7f78fb0ea13f6a1716d17294354ec6deac29c9a402fa053dc3838a1"
+      "sha256": "bfcdfc5e0cbc2392fcd39d5b36c3d1130150eeec65288f0e4f8835db7ddf79ff"
     },
     {
       "scenario": "details-light",
@@ -108,7 +200,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "f734d94ef718990b2cc6aa99fc7cbd57e4d4ec4f02f28e83ab11310adaaa1d12"
+      "sha256": "b27f59fb6658a339087859a3497b30363940d194e54ec5d1f02a2852f96da110"
     },
     {
       "scenario": "ijpl-editor",
@@ -117,7 +209,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "fa8ee6a1f74472ce898e6b313c3037f608f9d72ded6622cbc5b40441381263b8"
+      "sha256": "648046bc724deb25e604155271309aef083c661724d5077e6fe295f8ed3b0407"
     },
     {
       "scenario": "ijpl-ui",
@@ -135,7 +227,7 @@
       "logicalHeight": 372,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "b9dbff1062a2c259916ec90252efb0f24dc33272fd782e8540edf772bae5eaef"
+      "sha256": "123061239441512163eaf37a07f01c45c5a34f129ae860a5616072982da7cc65"
     },
     {
       "scenario": "recording-standalone",
@@ -144,7 +236,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "d20dfca9cf31bfaa5683f80acaa8ee6c6be4e6ad68f5c835234b15e1f5cba169"
+      "sha256": "85f8c584eaf22223f71d24d02c903eda84f8eb3219c955cedd8da4760097065a"
     },
     {
       "scenario": "recording-ijpl",
@@ -153,7 +245,25 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "813ff582fd2f41faf2e65c042832aa22335532ca0ab61e36e34f365bc044e5e5"
+      "sha256": "922744ec13e1e51136cbbe7aaf278496e85b5af21894b7cd17d2d0a53306e3ee"
+    },
+    {
+      "scenario": "live-standalone",
+      "path": "docs/images/live-standalone.png",
+      "logicalWidth": 1318,
+      "logicalHeight": 854,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "33f7ccad23d76f68c68fb076436b671c4d8b5195ce0aa0033172b52384cda419"
+    },
+    {
+      "scenario": "live-ijpl",
+      "path": "docs/images/live-ijpl.png",
+      "logicalWidth": 1318,
+      "logicalHeight": 854,
+      "scaleX": 2,
+      "scaleY": 2,
+      "sha256": "06c0bdddff0d126a450a3feae6b428b3999daa7d633b1e38c803e2a4e4d14361"
     }
   ]
 }

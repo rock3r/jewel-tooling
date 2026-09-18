@@ -1,0 +1,19 @@
+Compose:
+  ComposableAnnotationNaming:
+    active: true
+  ComposableNaming:
+    active: true
+  ComposableParamOrder:
+    active: true
+  CompositionLocalNaming:
+    active: true
+  ContentEmitterReturningValues:
+    active: true
+  ModifierDefaultValue:
+    active: true
+  ModifierReused:
+    active: true
+  MutableParams:
+    active: true
+  RememberMissing:
+    active: true

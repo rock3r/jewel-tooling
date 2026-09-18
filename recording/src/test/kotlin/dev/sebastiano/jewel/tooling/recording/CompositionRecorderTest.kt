@@ -16,6 +16,37 @@ class CompositionRecorderTest {
     CompositionRecorder(CaptureTarget("Fixture"), AtomicLong()::getAndIncrement).also { it.begin() }
 
   @Test
+  fun liveSnapshotsPreservePendingRootsAndFinalCounts() {
+    val recorder = recorder()
+    recorder.start(1, 0, 0, "root", 1, "UI")
+    recorder.start(2, 0, 0, "child", 1, "UI")
+    recorder.end(1)
+    val pending = recorder.snapshot()
+    pending.validate()
+    assertEquals(CaptureStatus.ACTIVE, pending.status)
+    assertTrue(pending.events.isEmpty())
+    assertEquals(0, pending.fidelity.discardedPairs)
+    recorder.end(1)
+    val committed = recorder.snapshot()
+    assertEquals(2, committed.events.size)
+    assertTrue(pending.events.isEmpty())
+    assertEquals(committed.events, recorder.stop().events)
+    assertSame(recorder.stop(), recorder.snapshot())
+  }
+
+  @Test
+  fun pollingCanObserveTheDurationLimit() {
+    val now = AtomicLong(0)
+    val recorder = CompositionRecorder(CaptureTarget("Fixture"), now::get)
+    recorder.begin()
+    now.set(RecordingLimits.DURATION_NS)
+    val result = recorder.snapshot()
+    assertEquals(CaptureStatus.TRUNCATED, result.status)
+    assertEquals(StopReason.DURATION_LIMIT, result.stopReason)
+    assertSame(result, recorder.stop())
+  }
+
+  @Test
   fun nestedSegmentsKeepInclusiveTimes() {
     val recorder = recorder()
     recorder.start(7, 1, -1, "outer", 1, "UI")

@@ -57,3 +57,25 @@ detekt {
   buildUponDefaultConfig = true
   config.setFrom(file("../../config/detekt.yml"))
 }
+
+val writeLiveTestClasspath by tasks.registering {
+  dependsOn(tasks.testClasses)
+  val output = layout.buildDirectory.file("live-test-classpath.txt")
+  outputs.file(output)
+  inputs.files(sourceSets.test.get().runtimeClasspath)
+  doLast { output.get().asFile.writeText(sourceSets.test.get().runtimeClasspath.asPath) }
+}
+
+tasks.test { dependsOn(writeLiveTestClasspath) }
+
+// This target uses Spectre for interaction, without a recorder bootstrap.
+tasks.register<JavaExec>("inspectionE2E") {
+  dependsOn(tasks.testClasses)
+  classpath = sourceSets.test.get().runtimeClasspath
+  mainClass.set("example.InspectionStandaloneTarget")
+  javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(25)) })
+  systemProperty(
+    "jewel.test.commands",
+    providers.gradleProperty("inspectionCommands").getOrElse(""),
+  )
+}

@@ -1,7 +1,11 @@
 package dev.sebastiano.jewel.tooling
 
-import com.intellij.icons.AllIcons
+import com.intellij.openapi.editor.colors.EditorColorsManager
+import com.intellij.openapi.editor.colors.EditorColorsScheme
+import com.intellij.openapi.util.text.HtmlChunk
 import com.intellij.psi.SmartPsiElementPointer
+import com.intellij.ui.ColorUtil
+import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
@@ -9,13 +13,13 @@ import com.intellij.ui.components.JBTextArea
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
+import java.awt.Color
 import java.awt.Dimension
 import java.awt.FlowLayout
 import java.awt.Font
 import java.awt.Rectangle
 import javax.swing.BoxLayout
 import javax.swing.Icon
-import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.Scrollable
@@ -25,11 +29,118 @@ import org.jetbrains.kotlin.psi.KtNamedDeclaration
 
 internal object StabilityPresentation {
   fun icon(stability: Stability): Icon =
-    when (stability) {
-      Stability.STABLE -> AllIcons.General.InspectionsOK
-      Stability.UNSTABLE -> AllIcons.General.Warning
-      Stability.UNKNOWN -> AllIcons.General.ContextHelp
+    StabilityStateIcon(StabilityAssessment(stability, "")) {
+      EditorColorsManager.getInstance().globalScheme
     }
+
+  fun foreground(stability: Stability): Color =
+    StabilityColors.color(EditorColorsManager.getInstance().globalScheme, stability)
+
+  fun title(stability: Stability): String =
+    JewelToolingBundle.message("state.${stability.name.lowercase(java.util.Locale.ROOT)}")
+
+  fun tooltip(
+    hint: ParameterHint,
+    scheme: EditorColorsScheme = EditorColorsManager.getInstance().globalScheme,
+  ): String {
+    val state = hint.assessment.stability
+    val muted = ColorUtil.toHtmlColor(UIUtil.getContextHelpForeground())
+    val scope =
+      when {
+        StabilityColors.isCompilerConfirmed(hint.assessment) -> "hint.confirmed"
+        state == Stability.UNSTABLE -> "hint.skipping"
+        else -> "hint.scope"
+      }
+    return HtmlChunk.tag("html")
+      .child(
+        HtmlChunk.div("font-weight: normal; width: 360px")
+          .child(HtmlChunk.tag("b").addText("${hint.name}: ${hint.typeText}"))
+          .child(HtmlChunk.br())
+          .child(
+            colored(ColorUtil.toHtmlColor(StabilityColors.color(scheme, state)))
+              .addText(title(state))
+          )
+          .child(HtmlChunk.tag("p").addText(hint.assessment.reason))
+          .child(
+            colored(muted)
+              .child(
+                HtmlChunk.tag("small")
+                  .attr("style", "color: $muted")
+                  .addText(evidence(hint.assessment))
+              )
+          )
+          .child(HtmlChunk.br())
+          .child(
+            colored(muted)
+              .child(
+                HtmlChunk.tag("small")
+                  .attr("style", "color: $muted")
+                  .addText(JewelToolingBundle.message(scope))
+              )
+          )
+          .child(HtmlChunk.br())
+          .child(
+            colored(muted)
+              .child(
+                HtmlChunk.tag("small")
+                  .attr("style", "color: $muted")
+                  .addText(JewelToolingBundle.message("hint.open"))
+              )
+          )
+      )
+      .toString()
+  }
+
+  fun summaryTooltip(report: FunctionStability): String {
+    val muted = ColorUtil.toHtmlColor(UIUtil.getContextHelpForeground())
+    val states =
+      Stability.entries.map { state ->
+        colored(ColorUtil.toHtmlColor(foreground(state)))
+          .addText(
+            JewelToolingBundle.message(
+              "summary.state",
+              report.parameters.count { it.assessment.stability == state },
+              JewelToolingBundle.message(state.messageKey),
+            )
+          )
+      }
+    return HtmlChunk.tag("html")
+      .child(HtmlChunk.tag("b").addText(report.name))
+      .child(HtmlChunk.br())
+      .child(
+        HtmlChunk.text(counts(report)).takeIf { report.parameters.isEmpty() }
+          ?: HtmlChunk.fragment(
+            *states
+              .flatMapIndexed { index, chunk ->
+                if (index == 0) listOf(chunk) else listOf(HtmlChunk.text(" · "), chunk)
+              }
+              .toTypedArray()
+          )
+      )
+      .child(HtmlChunk.br())
+      .child(HtmlChunk.br())
+      .child(
+        colored(muted)
+          .child(
+            HtmlChunk.tag("small")
+              .attr("style", "color: $muted")
+              .addText(JewelToolingBundle.message("summary.scope"))
+          )
+      )
+      .child(HtmlChunk.br())
+      .child(
+        colored(muted)
+          .child(
+            HtmlChunk.tag("small")
+              .attr("style", "color: $muted")
+              .addText(JewelToolingBundle.message("summary.open"))
+          )
+      )
+      .toString()
+  }
+
+  private fun colored(color: String): HtmlChunk.Element =
+    HtmlChunk.tag("span").attr("style", "color: $color")
 
   fun overall(report: FunctionStability): Stability =
     when {
@@ -83,6 +194,7 @@ internal class StabilityDetailsPanel(
         counts.add(
           label("$count ${JewelToolingBundle.message(state.messageKey)}").apply {
             icon = StabilityPresentation.icon(state)
+            foreground = StabilityPresentation.foreground(state)
           }
         )
       }
@@ -92,12 +204,19 @@ internal class StabilityDetailsPanel(
       val row = JPanel(BorderLayout(JBUI.scale(12), JBUI.scale(6))).apply { isOpaque = false }
       val heading =
         text("${parameter.name}: ${parameter.typeText}").apply {
-          font = Font(Font.MONOSPACED, Font.PLAIN, UIUtil.getLabelFont().size)
+          font =
+            EditorColorsManager.getInstance()
+              .globalScheme
+              .getFont(com.intellij.openapi.editor.colors.EditorFontType.PLAIN)
         }
       val state = parameter.assessment.stability
       val status =
-        label(JewelToolingBundle.message(state.messageKey)).apply {
-          icon = StabilityPresentation.icon(state)
+        label(StabilityPresentation.title(state)).apply {
+          icon =
+            StabilityStateIcon(parameter.assessment) {
+              EditorColorsManager.getInstance().globalScheme
+            }
+          foreground = StabilityPresentation.foreground(state)
           verticalAlignment = SwingConstants.TOP
         }
       val header =
@@ -118,7 +237,7 @@ internal class StabilityDetailsPanel(
       val target = parameter.assessment.sourceTarget
       if (target != null && navigate != null) {
         val button =
-          JButton(JewelToolingBundle.message("details.navigate")).apply {
+          ActionLink(JewelToolingBundle.message("details.navigate")).apply {
             putClientProperty("html.disable", true)
             accessibleContext.accessibleName =
               JewelToolingBundle.message("details.navigate.accessible", parameter.name)
@@ -132,27 +251,20 @@ internal class StabilityDetailsPanel(
         body.add(section(actions, 8, 0))
       }
       if (parameter.assessment.evidence.isNotEmpty()) {
-        row.add(
-          text(StabilityPresentation.evidence(parameter.assessment)).apply {
-            foreground = UIUtil.getContextHelpForeground()
-          },
-          BorderLayout.SOUTH,
-        )
+        row.add(secondary(StabilityPresentation.evidence(parameter.assessment)), BorderLayout.SOUTH)
       }
       row.border =
         JBUI.Borders.compound(
-          JBUI.Borders.customLineBottom(
-            JBUI.CurrentTheme.CustomFrameDecorations.separatorForeground()
-          ),
+          JBUI.Borders.customLineBottom(JBUI.CurrentTheme.Popup.separatorColor()),
           JBUI.Borders.empty(12, 0),
         )
       rows.add(row)
     }
     val empty = text(JewelToolingBundle.message("summary.empty"))
     if (report.parameters.isEmpty()) rows.add(section(empty, 0, 12))
-    rows.add(section(text(JewelToolingBundle.message("details.scope")), 16, 8))
-    rows.add(section(text(JewelToolingBundle.message("details.limit")), 0, 8))
-    rows.add(section(text(JewelToolingBundle.message("details.footer")), 0, 0))
+    rows.add(section(secondary(JewelToolingBundle.message("details.scope")), 16, 8))
+    rows.add(section(secondary(JewelToolingBundle.message("details.limit")), 0, 8))
+    rows.add(section(secondary(JewelToolingBundle.message("details.footer")), 0, 0))
     rows.border = JBUI.Borders.empty(16)
     val scroll =
       JBScrollPane(rows).apply {
@@ -179,6 +291,12 @@ internal class StabilityDetailsPanel(
       }
     focus = title
   }
+
+  private fun secondary(value: String) =
+    text(value).apply {
+      foreground = UIUtil.getContextHelpForeground()
+      font = JBUI.Fonts.smallFont()
+    }
 
   private fun label(value: String) =
     JBLabel(value).apply {

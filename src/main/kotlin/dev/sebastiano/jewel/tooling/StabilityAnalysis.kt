@@ -46,6 +46,7 @@ internal data class StabilityAssessment(
   val reason: String,
   val evidence: Set<Evidence> = emptySet(),
   val sourceTarget: SmartPsiElementPointer<KtNamedDeclaration>? = null,
+  val reasonCode: String = "reason.unsupported",
 ) {
   override fun equals(other: Any?): Boolean =
     other is StabilityAssessment &&
@@ -284,12 +285,7 @@ internal object StabilityAnalysis {
       source.containingKtFile.virtualFile ?: return assessment(Stability.UNKNOWN, "reason.external")
     val id = type.classId
     val internalName =
-      listOf(
-          id.packageFqName.asString().replace('.', '/'),
-          id.relativeClassName.asString().replace('.', '$'),
-        )
-        .filter { it.isNotEmpty() }
-        .joinToString("/")
+      binaryInternalName(id.packageFqName.asString(), id.relativeClassName.asString())
     val metadata =
       budget.binaries.read(file, internalName, symbol.typeParameters.size)
         as? CompilerStabilityMetadata.Result.Proven
@@ -324,6 +320,7 @@ internal object StabilityAnalysis {
             reason,
             evidence.toSet(),
             result.sourceTarget,
+            "reason.compilerArgument",
           )
         if (result.stability == Stability.UNKNOWN) unknown = true
         reasons += reason
@@ -333,11 +330,17 @@ internal object StabilityAnalysis {
         if (reasons.isEmpty()) JewelToolingBundle.message("reason.compilerStable")
         else reasons.joinToString("\n"),
         evidence.toSet(),
+        reasonCode = if (reasons.isEmpty()) "reason.compilerStable" else "reason.compilerArgument",
       )
     } finally {
       visiting.remove(symbol)
     }
   }
+
+  private fun binaryInternalName(packageName: String, relativeName: String) =
+    listOf(packageName.replace('.', '/'), relativeName.replace('.', '$'))
+      .filter { it.isNotEmpty() }
+      .joinToString("/")
 
   private class VisitBudget(private var remaining: Int, private val navigation: Boolean) {
     fun target(element: com.intellij.psi.PsiElement?) =
@@ -367,6 +370,7 @@ internal object StabilityAnalysis {
           else -> Evidence.UNSUPPORTED
         }
       ),
+      reasonCode = key,
     )
 
   private const val MAX_DEPTH = 12

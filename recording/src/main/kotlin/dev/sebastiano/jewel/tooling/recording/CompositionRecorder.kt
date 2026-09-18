@@ -123,6 +123,27 @@ class CompositionRecorder(
     }
   }
 
+  /** Copies committed segments without ending an active recording. */
+  fun snapshot(): Recording =
+    synchronized(lock) {
+      check(started)
+      result?.let {
+        return it
+      }
+      if (!isActive || !advanceClock()) return stop()
+      Recording(
+        sessionId,
+        target,
+        elapsed,
+        CaptureStatus.ACTIVE,
+        StopReason.NONE,
+        CaptureFidelity(abandonedStarts, discardedPairs, unmatchedEnds, rejectedStarts, false),
+        java.util.List.copyOf(sites.values),
+        java.util.List.copyOf(threads.values.map { it.label }),
+        java.util.List.copyOf(events),
+      )
+    }
+
   fun stop(): Recording =
     synchronized(lock) {
       check(started)
@@ -134,7 +155,8 @@ class CompositionRecorder(
       val status =
         when (finalReason) {
           StopReason.MANUAL -> CaptureStatus.STOPPED
-          StopReason.CLOCK_FAILURE -> CaptureStatus.FAILED
+          StopReason.CLOCK_FAILURE,
+          StopReason.TARGET_UNAVAILABLE -> CaptureStatus.FAILED
           else -> CaptureStatus.TRUNCATED
         }
       val snapshot =
@@ -161,6 +183,14 @@ class CompositionRecorder(
       threads.clear()
       events.clear()
       snapshot
+    }
+
+  /** Ends capture when its target can no longer supply reliable trace events. */
+  fun targetUnavailable(): Recording =
+    synchronized(lock) {
+      check(started)
+      if (isActive) terminate(StopReason.TARGET_UNAVAILABLE)
+      stop()
     }
 
   private fun advanceClock(): Boolean {

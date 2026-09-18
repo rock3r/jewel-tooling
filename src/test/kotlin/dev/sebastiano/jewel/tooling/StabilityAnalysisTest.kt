@@ -1,17 +1,13 @@
 package dev.sebastiano.jewel.tooling
 
-import com.intellij.codeInsight.hints.declarative.CollapseState
-import com.intellij.codeInsight.hints.declarative.CollapsiblePresentationTreeBuilder
-import com.intellij.codeInsight.hints.declarative.HintFormat
-import com.intellij.codeInsight.hints.declarative.InlayActionData
-import com.intellij.codeInsight.hints.declarative.InlayHintsProvider
-import com.intellij.codeInsight.hints.declarative.InlayHintsProviderFactory
-import com.intellij.codeInsight.hints.declarative.InlayPayload
-import com.intellij.codeInsight.hints.declarative.InlayPosition
-import com.intellij.codeInsight.hints.declarative.InlayTreeSink
-import com.intellij.codeInsight.hints.declarative.InlineInlayPosition
-import com.intellij.codeInsight.hints.declarative.PresentationTreeBuilder
-import com.intellij.codeInsight.hints.declarative.SharedBypassCollector
+import com.intellij.codeInsight.hints.BlockConstraints
+import com.intellij.codeInsight.hints.HorizontalConstraints
+import com.intellij.codeInsight.hints.InlayHintsProvider
+import com.intellij.codeInsight.hints.InlayHintsProviderExtension
+import com.intellij.codeInsight.hints.InlayHintsSink
+import com.intellij.codeInsight.hints.NoSettings
+import com.intellij.codeInsight.hints.presentation.InlayPresentation
+import com.intellij.codeInsight.hints.presentation.RootInlayPresentation
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadActionBlocking
 import com.intellij.openapi.command.WriteCommandAction
@@ -39,6 +35,9 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
 
   override fun setUp() {
     super.setUp()
+    com.intellij.openapi.application.WriteAction.run<RuntimeException> {
+      StabilityInlayMigration.migrate()
+    }
     val stdlib = File(System.getProperty("jewel.tooling.stdlib"))
     PsiTestUtil.addLibrary(module, "kotlin-stdlib", stdlib.parent, stdlib.name)
     val binaryFixtures = File(System.getProperty("jewel.tooling.compilerFixtures"))
@@ -285,7 +284,10 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
   fun testProviderDefersDuringIndexing() {
     myFixture.configureByText("Example.kt", "fun Demo(count: Int) {}")
     com.intellij.testFramework.DumbModeTestUtils.runInDumbModeSynchronously(project) {
-      assertNull(StabilityInlayProvider().createCollector(myFixture.file, myFixture.editor))
+      assertNull(
+        StabilityInlayProvider()
+          .getCollectorFor(myFixture.file, myFixture.editor, NoSettings(), CapturingSink())
+      )
     }
   }
 
@@ -329,22 +331,33 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
   }
 
   fun testTooltipKeepsExplanationAndLimits() {
-    val tooltip = JewelToolingBundle.message("hint.tooltip", "count", "stable", "A specific reason")
+    val tooltip =
+      StabilityPresentation.tooltip(
+        ParameterHint(0, "count", StabilityAssessment(Stability.STABLE, "A specific reason"), "Int")
+      )
     assertTrue(tooltip.contains("A specific reason"))
     assertTrue(tooltip.contains("Static estimate"))
-    assertTrue(tooltip.contains('\n'))
+    assertTrue(tooltip.contains("<small"))
+    val escaped =
+      StabilityPresentation.tooltip(
+        ParameterHint(
+          0,
+          "<b>name</b>",
+          StabilityAssessment(Stability.UNKNOWN, "A <mutable> type"),
+          "List<String>",
+        )
+      )
+    assertFalse(escaped.contains("<b>name</b>"))
+    assertTrue(escaped.contains("&lt;mutable&gt;"))
+    assertTrue(escaped.contains("List&lt;String&gt;"))
   }
 
   fun testRegisteredProviderPositionsAndExplanation() {
     val source = "import androidx.compose.runtime.Composable; @Composable fun Demo(count: Int) {}"
     val provider =
-      requireNotNull(
-          InlayHintsProviderFactory.getProviderInfo(
-            KotlinLanguage.INSTANCE,
-            "jewel.compose.stability",
-          )
-        )
-        .provider
+      InlayHintsProviderExtension.allForLanguage(KotlinLanguage.INSTANCE)
+        .filterIsInstance<StabilityInlayProvider>()
+        .single()
     val captured = collect(source, provider)
     assertEquals(1, captured.size)
     assertEquals(source.indexOf("Int") + 3, captured.single().offset)
@@ -619,13 +632,23 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
     )
     val first = markers().single()
     assertTrue(first.lineMarkerTooltip!!.contains("&lt;demo&gt;"))
-    assertTrue(first.lineMarkerTooltip!!.contains("1 stable · 0 unstable · 1 unknown"))
+    assertTrue(
+      first.lineMarkerTooltip!!
+        .replace(Regex("<[^>]*>"), "")
+        .contains("1 stable · 0 unstable · 1 unknown")
+    )
     WriteCommandAction.runWriteCommandAction(project) {
       val start = myFixture.editor.document.text.indexOf("val name")
       myFixture.editor.document.replaceString(start, start + 3, "var")
       PsiDocumentManager.getInstance(project).commitAllDocuments()
     }
-    assertTrue(markers().single().lineMarkerTooltip!!.contains("0 stable · 1 unstable · 1 unknown"))
+    assertTrue(
+      markers()
+        .single()
+        .lineMarkerTooltip!!
+        .replace(Regex("<[^>]*>"), "")
+        .contains("0 stable · 1 unstable · 1 unknown")
+    )
     myFixture.configureByText(
       "Example.kt",
       "annotation class Composable; @Composable fun Fake(value: Int) {}",
@@ -1055,67 +1078,63 @@ class StabilityAnalysisTest : LightJavaCodeInsightFixtureTestCase() {
 
   private data class CapturedHint(val offset: Int, val label: String, val tooltip: String)
 
-  private fun collect(source: String, provider: InlayHintsProvider): List<CapturedHint> {
+  private class CapturingSink : InlayHintsSink {
+    val captured = mutableListOf<CapturedHint>()
+
+    override fun addInlineElement(
+      offset: Int,
+      relatesToPrecedingText: Boolean,
+      presentation: InlayPresentation,
+      placeAtTheEndOfLine: Boolean,
+    ) {
+      check(relatesToPrecedingText && !placeAtTheEndOfLine)
+      val hint = presentation as StabilityHintPresentation
+      captured += CapturedHint(offset, hint.label, hint.tooltip)
+    }
+
+    override fun addBlockElement(
+      offset: Int,
+      relatesToPrecedingText: Boolean,
+      showAbove: Boolean,
+      priority: Int,
+      presentation: InlayPresentation,
+    ) {
+      error("Unexpected block hint")
+    }
+
+    override fun addInlineElement(
+      offset: Int,
+      presentation: RootInlayPresentation<*>,
+      constraints: HorizontalConstraints?,
+    ) {
+      error("Unexpected root hint")
+    }
+
+    override fun addBlockElement(
+      logicalLine: Int,
+      showAbove: Boolean,
+      presentation: RootInlayPresentation<*>,
+      constraints: BlockConstraints?,
+    ) {
+      error("Unexpected block hint")
+    }
+  }
+
+  private fun collect(
+    source: String,
+    provider: InlayHintsProvider<NoSettings>,
+  ): List<CapturedHint> {
     myFixture.configureByText("Example.kt", source)
     val editor = myFixture.editor
-    return AppExecutorUtil.getAppExecutorService()
-      .submit(
-        Callable<List<CapturedHint>> {
-          runReadActionBlocking {
-            val captured = mutableListOf<CapturedHint>()
-            val collector =
-              provider.createCollector(myFixture.file, editor) as SharedBypassCollector
-            val sink =
-              object : InlayTreeSink {
-                override fun whenOptionEnabled(optionId: String, block: () -> Unit) = block()
-
-                @Suppress("NoNameShadowing")
-                override fun addPresentation(
-                  position: InlayPosition,
-                  payloads: List<InlayPayload>?,
-                  tooltip: String?,
-                  hintFormat: HintFormat,
-                  builder: PresentationTreeBuilder.() -> Unit,
-                ) {
-                  val label = StringBuilder()
-                  val tree =
-                    object : PresentationTreeBuilder {
-                      override fun text(text: String, actionData: InlayActionData?) {
-                        label.append(text)
-                      }
-
-                      override fun list(builder: PresentationTreeBuilder.() -> Unit) = builder()
-
-                      override fun clickHandlerScope(
-                        actionData: InlayActionData,
-                        builder: PresentationTreeBuilder.() -> Unit,
-                      ) = builder()
-
-                      override fun collapsibleList(
-                        state: CollapseState,
-                        expandedState: CollapsiblePresentationTreeBuilder.() -> Unit,
-                        collapsedState: CollapsiblePresentationTreeBuilder.() -> Unit,
-                      ) {
-                        error("Unexpected collapsible hint")
-                      }
-                    }
-                  tree.builder()
-                  captured +=
-                    CapturedHint(
-                      (position as InlineInlayPosition).offset,
-                      label.toString(),
-                      tooltip.orEmpty(),
-                    )
-                }
-              }
-            (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().forEach {
-              collector.collectFromElement(it, sink)
-            }
-            captured
-          }
-        }
-      )
-      .get(30, TimeUnit.SECONDS)
+    return backgroundRead {
+      val sink = CapturingSink()
+      val collector =
+        requireNotNull(provider.getCollectorFor(myFixture.file, editor, NoSettings(), sink))
+      (myFixture.file as KtFile).declarations.filterIsInstance<KtNamedFunction>().forEach {
+        check(collector.collect(it, editor, sink))
+      }
+      sink.captured
+    }
   }
 
   private fun assertVerdict(
