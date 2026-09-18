@@ -40,9 +40,11 @@ class FixtureToolWindow : ToolWindowFactory {
       )
     toolWindow.addComposeTab("Jewel fixture", focusOnClickInside = true) {
       var items by remember { mutableStateOf(listOf("First item")) }
-      GreetingRow(Greeting("A Jewel IntelliJ tool window"), items) {
-        items = items + "Another item"
-      }
+      GreetingRow(
+        Greeting("A Jewel IntelliJ tool window"),
+        items,
+        onIncrement = { items = items + "Another item" },
+      )
     }
   }
 }

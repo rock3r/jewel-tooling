@@ -49,9 +49,11 @@ fun showApplication(manualRecording: Boolean = true): ComposeWindow =
                 Text("Copy Inspection Connection")
               }
             Spacer(Modifier.height(CONTENT_PADDING.dp))
-            GreetingRow(Greeting("A Jewel standalone application"), items) {
-              items = items + "Another item"
-            }
+            GreetingRow(
+              Greeting("A Jewel standalone application"),
+              items,
+              onIncrement = { items = items + "Another item" },
+            )
           }
         }
       }
