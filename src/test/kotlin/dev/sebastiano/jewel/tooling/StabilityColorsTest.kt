@@ -64,7 +64,7 @@ class StabilityColorsTest : BasePlatformTestCase() {
     scheme.setColor(keys.fill, Color.BLUE)
     val repainted = render(estimate, 2)
     assertEquals(Color.BLUE.rgb, repainted.getRGB(repainted.width / 2, repainted.height / 2))
-    assertEquals(6, StabilityColorSettingsPage().colorDescriptors.map { it.key }.distinct().size)
+    assertEquals(8, StabilityColorSettingsPage().colorDescriptors.map { it.key }.distinct().size)
   }
 
   fun testDefaultSchemesHaveDistinctMarkerColors() {
