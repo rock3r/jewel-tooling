@@ -9,6 +9,8 @@ import java.nio.file.LinkOption.NOFOLLOW_LINKS
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.security.MessageDigest
+import java.util.Locale
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -17,11 +19,13 @@ import kotlinx.coroutines.withContext
 internal data class InstalledInspection(val agent: Path, val bridge: Path)
 
 @Service(Service.Level.APP)
-internal class InspectionSupport {
+internal class InspectionSupport
+@JvmOverloads
+constructor(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
   private val lock = Mutex()
 
   suspend fun install(): InstalledInspection =
-    withContext(Dispatchers.IO) {
+    withContext(ioDispatcher) {
       lock.withLock {
         val agent = asset("inspection-agent.jar")
         val bridge = asset("bridge.jar")
@@ -32,7 +36,7 @@ internal class InspectionSupport {
               update(bridge)
             }
             .digest()
-            .joinToString("") { "%02x".format(it) }
+            .joinToString("") { "%02x".format(Locale.ROOT, it) }
         val directory = Path.of(PathManager.getSystemPath(), "jewel-tooling", "inspection", digest)
         Files.createDirectories(directory)
         InspectionFiles.restrict(directory)

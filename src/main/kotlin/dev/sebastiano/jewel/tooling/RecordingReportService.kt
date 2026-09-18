@@ -17,6 +17,7 @@ import dev.sebastiano.jewel.tooling.recording.SiteSummary
 import dev.sebastiano.jewel.tooling.recording.summarize
 import java.io.IOException
 import java.nio.file.Path
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,9 +29,12 @@ import kotlinx.coroutines.withContext
 internal data class RecordingReportData(val recording: Recording, val sites: List<SiteSummary>)
 
 @Service(Service.Level.PROJECT)
-internal class RecordingReportService(
+internal class RecordingReportService
+@JvmOverloads
+constructor(
   private val project: Project,
   private val scope: CoroutineScope,
+  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Disposable {
   private var request: Job? = null
   private var dialog: RecordingReportDialog? = null
@@ -42,7 +46,7 @@ internal class RecordingReportService(
     if (disposed || project.isDisposed) return
     val modality = ModalityState.current().asContextElement()
     request =
-      requestScope.launch(Dispatchers.IO + modality) {
+      requestScope.launch(ioDispatcher + modality) {
         val context = currentCoroutineContext()
         val data =
           try {

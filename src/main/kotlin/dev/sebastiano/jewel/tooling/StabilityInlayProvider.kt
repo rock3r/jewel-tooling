@@ -59,7 +59,11 @@ internal class StabilityInlayProvider(
   ): InlayHintsCollector? {
     if (file !is KtFile || file.isCompiled || DumbService.isDumb(file.project)) return null
     return object : FactoryInlayHintsCollector(editor) {
-      @Suppress("TooGenericExceptionCaught", "ReturnCount")
+      @Suppress(
+        "TooGenericExceptionCaught",
+        "ReturnCount",
+        "InstanceOfCheckForException",
+      ) // ControlFlowException is an interface, so it cannot be a catch subject.
       override fun collect(element: PsiElement, editor: Editor, sink: InlayHintsSink): Boolean {
         val function = element as? KtNamedFunction ?: return true
         if (function.annotationEntries.isEmpty()) return true

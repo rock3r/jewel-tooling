@@ -244,7 +244,7 @@ internal object CompilerStabilityMetadata {
           write.desc == "I"
       )
       requireShape(constant == null || constant == value)
-      return value!!
+      return checkNotNull(value)
     }
   }
 }

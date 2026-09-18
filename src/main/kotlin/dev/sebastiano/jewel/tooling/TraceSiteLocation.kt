@@ -98,7 +98,7 @@ internal object TraceSiteLocations {
   private fun choose(location: TraceSiteLocation, files: List<KtFile>): VirtualFile? {
     fun pick(candidates: List<KtFile>): VirtualFile? {
       if (candidates.size <= 1) return candidates.singleOrNull()?.virtualFile
-      return candidates.filter { !it.isCompiled }.singleOrNull()?.virtualFile
+      return candidates.singleOrNull { !it.isCompiled }?.virtualFile
     }
     val exact = files.filter {
       location.packageName.isEmpty() || it.packageFqName.asString() == location.packageName

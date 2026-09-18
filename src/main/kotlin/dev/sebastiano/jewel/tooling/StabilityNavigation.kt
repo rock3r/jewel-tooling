@@ -25,6 +25,7 @@ internal enum class NavigationStatus {
 }
 
 internal object StabilityNavigation {
+  @Suppress("LongParameterList") // The gate compares every stale-input field without hidden state.
   fun gate(
     snapshot: StabilityReportSnapshot,
     current: StabilityReportSnapshot?,

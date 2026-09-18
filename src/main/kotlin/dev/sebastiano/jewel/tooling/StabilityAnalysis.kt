@@ -121,6 +121,7 @@ internal object StabilityAnalysis {
     "ReturnCount",
     "ComplexCondition",
     "LoopWithTooManyJumpStatements",
+    "LongParameterList",
   )
   private fun KaSession.classify(
     type: KaType,
@@ -156,7 +157,7 @@ internal object StabilityAnalysis {
       return assessment(
         Stability.STABLE,
         "reason.contract",
-        contract.classId!!.shortClassName.asString(),
+        checkNotNull(contract.classId).shortClassName.asString(),
       )
     if (symbol.classKind == KaClassKind.ENUM_CLASS)
       return assessment(Stability.STABLE, "reason.enum")
@@ -269,7 +270,7 @@ internal object StabilityAnalysis {
 
   // Keep unsupported-case rejection and unstable precedence explicit, as in the source decision
   // table.
-  @Suppress("ReturnCount", "CyclomaticComplexMethod")
+  @Suppress("ReturnCount", "CyclomaticComplexMethod", "LongParameterList")
   private fun KaSession.classifyBinary(
     type: KaClassType,
     symbol: KaNamedClassSymbol,

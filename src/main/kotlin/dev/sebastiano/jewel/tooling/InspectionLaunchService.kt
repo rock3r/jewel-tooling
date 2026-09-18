@@ -32,6 +32,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,9 +44,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 @Suppress("TooManyFunctions") // Owns the launch lifecycle and its validation steps.
 @Service(Service.Level.PROJECT)
-internal class InspectionLaunchService(
+internal class InspectionLaunchService
+@JvmOverloads
+constructor(
   private val project: Project,
   private val scope: CoroutineScope,
+  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+  private val computeDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : Disposable {
   @Volatile private var active: Pending? = null
   private var installJob: Job? = null
@@ -161,11 +166,10 @@ internal class InspectionLaunchService(
             ToolWindowManager.getInstance(project).getToolWindow("Compose Inspection")?.show()
             connected = true
           }
-        } catch (failure: IOException) {
-          reportFailure(
-            pending,
-            if (failure is LaunchFailure) failure.messageKey else "launch.failed",
-          )
+        } catch (failure: LaunchFailure) {
+          reportFailure(pending, failure.messageKey)
+        } catch (_: IOException) {
+          reportFailure(pending, "launch.failed")
         } catch (_: com.intellij.execution.ExecutionException) {
           reportFailure(pending, "launch.failed")
         } catch (_: IllegalArgumentException) {
@@ -173,7 +177,7 @@ internal class InspectionLaunchService(
         } catch (_: SecurityException) {
           reportFailure(pending, "launch.failed")
         } finally {
-          withContext(NonCancellable + Dispatchers.IO) {
+          withContext(NonCancellable + ioDispatcher) {
             pending.directory?.let { directory ->
               try {
                 InspectionFiles.cleanup(directory)
@@ -192,13 +196,13 @@ internal class InspectionLaunchService(
     if (pending.native)
       validateNative(pending.settings.configuration as CommonJavaRunConfigurationParameters)
     val directory =
-      withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         InspectionFiles.createDirectory(
             Path.of(PathManager.getSystemPath(), "jewel-tooling", "launches")
           )
           .also { pending.directory = it }
       }
-    withContext(Dispatchers.IO) {
+    withContext(ioDispatcher) {
       InspectionFiles.write(
         directory.resolve(InspectionFiles.CONFIG),
         mapOf("version" to "1", "nonce" to pending.nonce, "name" to name.take(MAX_TARGET_NAME)),
@@ -210,7 +214,7 @@ internal class InspectionLaunchService(
       parameters += "-javaagent:${support.agent}=${directory.resolve(InspectionFiles.CONFIG)}"
       java.vmParameters = ParametersListUtil.join(parameters)
     } else
-      withContext(Dispatchers.IO) {
+      withContext(ioDispatcher) {
         checkNotNull(gradle)
           .prepare(pending.settings.configuration, support.agent, directory, pending.nonce)
       }
@@ -222,7 +226,7 @@ internal class InspectionLaunchService(
 
   private suspend fun validateNative(configuration: CommonJavaRunConfigurationParameters) {
     val valid =
-      withContext(Dispatchers.Default) {
+      withContext(computeDispatcher) {
         readAction {
           val alternative =
             configuration.alternativeJrePath.takeIf { configuration.isAlternativeJrePathEnabled }
@@ -241,7 +245,7 @@ internal class InspectionLaunchService(
   }
 
   private suspend fun awaitTarget(pending: Pending): LiveEndpoint =
-    withContext(Dispatchers.IO) {
+    withContext(ioDispatcher) {
       val directory = checkNotNull(pending.directory)
       var deadline: Long? = null
       var handler: ProcessHandler? = null

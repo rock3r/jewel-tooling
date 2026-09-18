@@ -23,6 +23,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Condition
 import com.intellij.openapi.util.Disposer
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,9 +31,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Service(Service.Level.PROJECT)
-internal class LiveInspectionEditorHints(
+internal class LiveInspectionEditorHints
+@JvmOverloads
+constructor(
   private val project: Project,
   private val scope: CoroutineScope,
+  private val computeDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : Disposable {
   private val hints = AtomicReference<Map<String, Map<Int, LiveEditorHint>>>(emptyMap())
   private val attached = HashMap<Editor, Gutter>()
@@ -81,7 +85,7 @@ internal class LiveInspectionEditorHints(
     }
     val modality = ModalityState.current().asContextElement()
     request =
-      scope.launch(Dispatchers.Default + modality) {
+      scope.launch(computeDispatcher + modality) {
         val mapped = smartReadAction(project) { TraceSiteLocations.map(project, data) }
         if (disposed || project.isDisposed || generation != requestGeneration) return@launch
         hints.set(mapped)

@@ -33,6 +33,7 @@ import com.intellij.psi.util.PsiModificationTracker
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ui.JBUI
 import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,9 +44,12 @@ import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 
 @Service(Service.Level.PROJECT)
-internal class StabilityDetailsService(
+internal class StabilityDetailsService
+@JvmOverloads
+constructor(
   private val project: Project,
   private val scope: CoroutineScope,
+  private val computeDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : Disposable {
   private var request: Job? = null
   private var popup: JBPopup? = null
@@ -54,8 +58,9 @@ internal class StabilityDetailsService(
 
   /** Called on EDT; each invocation owns one cancellable background read. */
   @Suppress(
-    "TooGenericExceptionCaught"
-  ) // Report ordinary analysis errors while preserving cancellation.
+    "TooGenericExceptionCaught",
+    "InstanceOfCheckForException",
+  ) // ControlFlowException is an interface, so it cannot be a catch subject.
   fun show(editor: Editor, offset: Int, requestScope: CoroutineScope = scope) {
     request?.cancel()
     popup?.cancel()
@@ -63,7 +68,7 @@ internal class StabilityDetailsService(
     val stamp = editor.document.modificationStamp
     val modality = ModalityState.current().asContextElement()
     request =
-      requestScope.launch(Dispatchers.Default + modality) {
+      requestScope.launch(computeDispatcher + modality) {
         val report =
           try {
             smartReadAction(project) { readSnapshot(editor, offset) }

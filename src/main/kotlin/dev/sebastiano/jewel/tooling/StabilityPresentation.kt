@@ -91,6 +91,7 @@ internal object StabilityPresentation {
       .toString()
   }
 
+  @Suppress("SpreadOperator") // HtmlChunk.fragment takes varargs; the state list is at most three.
   fun summaryTooltip(report: FunctionStability): String {
     val muted = ColorUtil.toHtmlColor(UIUtil.getContextHelpForeground())
     val states =
@@ -167,9 +168,9 @@ internal object StabilityPresentation {
     else
       JewelToolingBundle.message(
         "summary.counts",
-        *Stability.entries
-          .map { state -> report.parameters.count { it.assessment.stability == state } }
-          .toTypedArray(),
+        report.parameters.count { it.assessment.stability == Stability.STABLE },
+        report.parameters.count { it.assessment.stability == Stability.UNSTABLE },
+        report.parameters.count { it.assessment.stability == Stability.UNKNOWN },
       )
 }
 

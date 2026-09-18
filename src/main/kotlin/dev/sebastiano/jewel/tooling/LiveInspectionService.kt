@@ -25,6 +25,7 @@ import java.net.URISyntaxException
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Path
 import javax.swing.JComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -37,9 +38,12 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 @Suppress("TooManyFunctions") // One controller owns connection, capture, export, and disposal.
 @Service(Service.Level.PROJECT)
-internal class LiveInspectionService(
+internal class LiveInspectionService
+@JvmOverloads
+constructor(
   private val project: Project,
   private val scope: CoroutineScope,
+  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Disposable {
   private var view: LiveInspectionPanel? = null
   private var state = LiveInspectionState()
@@ -103,7 +107,7 @@ internal class LiveInspectionService(
     )
     val modality = ModalityState.current().asContextElement()
     job =
-      scope.launch(Dispatchers.IO + modality) {
+      scope.launch(ioDispatcher + modality) {
         try {
           val target = client.connect()
           withContext(Dispatchers.EDT) {
@@ -318,7 +322,7 @@ internal class LiveInspectionService(
 
   fun export(path: Path, recording: Recording) {
     val modality = ModalityState.current().asContextElement()
-    scope.launch(Dispatchers.IO + modality) {
+    scope.launch(ioDispatcher + modality) {
       val context = currentCoroutineContext()
       val failure =
         try {

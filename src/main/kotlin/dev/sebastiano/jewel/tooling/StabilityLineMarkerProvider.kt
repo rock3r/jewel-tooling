@@ -26,7 +26,8 @@ internal class StabilityLineMarkerProvider(
     "TooGenericExceptionCaught",
     "CyclomaticComplexMethod",
     "LoopWithTooManyJumpStatements",
-  ) // Isolate broken functions; never swallow cancellation.
+    "InstanceOfCheckForException",
+  ) // Isolate broken functions; never swallow cancellation. ControlFlowException is an interface.
   override fun collectSlowLineMarkers(
     elements: List<PsiElement>,
     result: MutableCollection<in LineMarkerInfo<*>>,
