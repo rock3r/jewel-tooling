@@ -20,11 +20,12 @@ class Greeting(val title: String)
 fun GreetingRow(
   greeting: Greeting,
   items: List<String>,
+  onIncrement: () -> Unit,
+  modifier: Modifier = Modifier,
   compiledGreeting: standaloneevidence.Stable = standaloneevidence.Stable("Compiler metadata"),
   metadata: Pair<String, String> = "Jewel" to "Compose",
-  onIncrement: () -> Unit,
 ) {
-  Column {
+  Column(modifier) {
     Text("${metadata.first}: ${greeting.title}")
     Text(compiledGreeting.title)
     Spacer(Modifier.height(16.dp))
