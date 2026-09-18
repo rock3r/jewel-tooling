@@ -51,7 +51,8 @@ internal class DetailsScenario {
       }
       point != null
     }
-    robot.click(point!!.x, point!!.y)
+    val clicked = requireNotNull(point)
+    robot.click(clicked.x, clicked.y)
     await("gutter popup opened") { edt { detailsPanel() != null } }
     val content = edt { visibleText(requireNotNull(detailsPanel())).joinToString("\n") }
     check(content.contains("GreetingRow")) { content }

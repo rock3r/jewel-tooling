@@ -15,7 +15,10 @@ import org.jetbrains.jewel.ui.component.Text
 
 class Greeting(val title: String)
 
-@Suppress("MagicNumber") // Fixed layout spacing in the public example.
+@Suppress(
+  "MagicNumber",
+  "LongParameterList",
+) // Public example keeps layout spacing and compiler-evidence parameters.
 @Composable
 fun GreetingRow(
   greeting: Greeting,

@@ -132,6 +132,9 @@ class RuntimeServerTest {
         }
       }
       withTimeout(5000) { entered.await() }
+      @Suppress(
+        "InjectDispatcher"
+      ) // JUnit 4 needs a no-arg constructor; close must leave the test dispatcher.
       withContext(Dispatchers.IO) { server.close() }
       assertTrue(future.isCancelled)
       call.cancelAndJoin()
@@ -294,6 +297,7 @@ class RuntimeServerTest {
     }
   }
 
+  @Suppress("LongParameterList") // Optional HTTP headers vary independently in protocol tests.
   private fun request(
     server: RuntimeServer,
     method: String,

@@ -48,6 +48,7 @@ enum class Choice {
   FIRST
 }
 
+@Suppress("LongParameterList") // Compiler fixture for a class that uses eleven type parameters.
 class Used11<A, B, C, D, E, F, G, H, I, J, K>(
   val a: A,
   val b: B,

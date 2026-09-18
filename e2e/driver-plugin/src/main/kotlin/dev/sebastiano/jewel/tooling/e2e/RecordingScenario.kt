@@ -208,7 +208,7 @@ internal class RecordingScenario(private val project: Project, private val scope
 
   private fun descendants(component: Component): List<Component> =
     listOf(component) +
-      ((component as? Container)?.components?.flatMap { descendants(it) } ?: emptyList())
+      ((component as? Container)?.components?.flatMap { descendants(it) }).orEmpty()
 
   private fun visibleText(components: List<Component>): String =
     components.joinToString("\n") {

@@ -405,7 +405,7 @@ class EditorScenarioAction : AnAction() {
             object : ExternalProjectRefreshCallback {
               override fun onSuccess(externalProject: DataNode<ProjectData>?) {
                 try {
-                  check(externalProject != null) { "Gradle sync returned no project model" }
+                  checkNotNull(externalProject) { "Gradle sync returned no project model" }
                   completed.complete(Unit)
                 } catch (failure: Throwable) {
                   completed.completeExceptionally(failure)
