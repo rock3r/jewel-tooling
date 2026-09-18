@@ -72,11 +72,6 @@ internal object LiveInspectionGutter {
   fun badge(scheme: EditorColorsScheme, hot: Boolean): Color =
     ColorUtil.mix(scheme.defaultBackground, foreground(scheme, hot), if (hot) 0.38 else 0.16)
 
-  fun width(editor: Editor, hints: Collection<LiveEditorHint>): Int {
-    if (hints.isEmpty()) return 0
-    return hints.maxOf { badgeWidth(editor, it) }
-  }
-
   fun badgeWidth(editor: Editor, hint: LiveEditorHint): Int {
     val font =
       editor.colorsScheme.getFont(if (hint.hot) EditorFontType.BOLD else EditorFontType.PLAIN)
@@ -88,7 +83,7 @@ internal object LiveInspectionGutter {
 
 internal class LiveInspectionGutterRenderer(private val hint: LiveEditorHint) :
   LineMarkerRendererEx, ActiveGutterRenderer {
-  override fun getPosition(): LineMarkerRendererEx.Position = LineMarkerRendererEx.Position.LEFT
+  override fun getPosition(): LineMarkerRendererEx.Position = LineMarkerRendererEx.Position.RIGHT
 
   override fun paint(editor: Editor, g: Graphics, r: Rectangle) {
     val g2 = g.create() as Graphics2D

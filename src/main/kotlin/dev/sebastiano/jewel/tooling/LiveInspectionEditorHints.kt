@@ -13,7 +13,6 @@ import com.intellij.openapi.editor.colors.EditorColorsListener
 import com.intellij.openapi.editor.colors.EditorColorsManager
 import com.intellij.openapi.editor.event.EditorFactoryEvent
 import com.intellij.openapi.editor.event.EditorFactoryListener
-import com.intellij.openapi.editor.ex.EditorEx
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.markup.TextAttributes
@@ -136,20 +135,12 @@ constructor(
 
   private inner class Gutter(private val editor: Editor) : Disposable {
     private val highlighters = ArrayList<RangeHighlighter>()
-    private var reservation: Disposable? = null
 
     fun sync() {
       if (disposed || editor.isDisposed) return
       clear()
       val byLine = hint(editor)
-      val editorEx = editor as? EditorEx ?: return
-      val width = LiveInspectionGutter.width(editor, byLine.values)
-      if (width > 0) {
-        val next = Disposer.newDisposable(this)
-        reservation = next
-        editorEx.gutterComponentEx.reserveLeftFreePaintersAreaWidth(next, width)
-      }
-      val markup = editorEx.markupModel
+      val markup = editor.markupModel
       val lineCount = editor.document.lineCount
       for ((line, value) in byLine) {
         if (line !in 0 until lineCount) continue
@@ -163,16 +154,10 @@ constructor(
     private fun clear() {
       highlighters.forEach { it.dispose() }
       highlighters.clear()
-      reservation?.let(Disposer::dispose)
-      reservation = null
     }
 
     override fun dispose() {
-      if (!editor.isDisposed) clear()
-      else {
-        highlighters.clear()
-        reservation = null
-      }
+      if (!editor.isDisposed) clear() else highlighters.clear()
     }
   }
 }
