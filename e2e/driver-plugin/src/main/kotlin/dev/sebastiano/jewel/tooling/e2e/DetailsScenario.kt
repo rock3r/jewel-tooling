@@ -57,7 +57,7 @@ internal class DetailsScenario {
     check(content.contains("GreetingRow")) { content }
     check(content.contains("Pair<String, String>")) { content }
     check(
-      content.contains("3 stable") &&
+      content.contains("4 stable") &&
         content.contains("1 unstable") &&
         content.contains("1 unknown")
     ) {

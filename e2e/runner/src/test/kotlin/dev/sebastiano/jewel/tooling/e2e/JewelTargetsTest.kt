@@ -132,7 +132,7 @@ class JewelTargetsTest {
             System.getProperty("jewel.test.captureId", "development"),
           )
           addSystemProperty("jewel.test.file", "src/main/kotlin/example/Example.kt")
-          addSystemProperty("jewel.test.expected", "stable,unstable,stable,unknown,stable")
+          addSystemProperty("jewel.test.expected", "stable,unstable,stable,stable,stable,unknown")
           addSystemProperty("jewel.test.gradle", target == "standalone")
           addSystemProperty("jewel.test.hover", target == "standalone")
           addSystemProperty("jewel.test.retina", System.getProperty("jewel.test.retina", "false"))
