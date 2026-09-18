@@ -42,6 +42,7 @@ Keep the bridge JDK-only. Keep agent libraries private. Check packaged contents 
 
 Current capture observes EDT callbacks and rejects unsupported or multiple runtime copies.
 It does not identify skipped calls, invalidation causes, argument values, or composition instances.
+The live view can annotate matching Kotlin files in the editor from compiler file names in the recording. Details file names open when that file resolves in the project or its dependencies.
 See the [live inspection guide](user-guide.md#run-your-project-with-live-inspection) for launch types and capture semantics.
 
 Cancel owned work, close sockets, and release listeners on disconnect, project disposal, and plugin unload.

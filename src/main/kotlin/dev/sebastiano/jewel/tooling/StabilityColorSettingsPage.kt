@@ -19,9 +19,9 @@ internal class StabilityColorSettingsPage : ColorSettingsPage {
 
   override fun getAttributeDescriptors(): Array<AttributesDescriptor> = emptyArray()
 
-  override fun getColorDescriptors(): Array<ColorDescriptor> =
-    Stability.entries
-      .flatMap { state ->
+  override fun getColorDescriptors(): Array<ColorDescriptor> {
+    val stability =
+      Stability.entries.flatMap { state ->
         val palette = StabilityColors.palettes.getValue(state)
         val name = state.name.lowercase(Locale.ROOT)
         listOf(
@@ -37,5 +37,19 @@ internal class StabilityColorSettingsPage : ColorSettingsPage {
           ),
         )
       }
-      .toTypedArray()
+    val live =
+      listOf(
+        ColorDescriptor(
+          JewelToolingBundle.message("colors.live.gutter"),
+          LiveInspectionGutter.text,
+          ColorDescriptor.Kind.FOREGROUND,
+        ),
+        ColorDescriptor(
+          JewelToolingBundle.message("colors.live.gutter.hot"),
+          LiveInspectionGutter.hotText,
+          ColorDescriptor.Kind.FOREGROUND,
+        ),
+      )
+    return (stability + live).toTypedArray()
+  }
 }

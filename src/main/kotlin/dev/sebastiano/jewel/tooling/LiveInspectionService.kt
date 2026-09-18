@@ -53,6 +53,7 @@ internal class LiveInspectionService(
   fun createComponent(): JComponent {
     val created =
       LiveInspectionPanel(
+        project,
         ::connectDialog,
         { project.service<InspectionLaunchService>().disconnect() },
         { command(LiveCommand.START) },
@@ -342,9 +343,18 @@ internal class LiveInspectionService(
 
   private fun current(value: Long) = !disposed && !project.isDisposed && generation == value
 
+  fun snapshot(): RecordingReportData? = state.data
+
+  fun selectSite(id: Int) {
+    view?.selectSite(id)
+  }
+
   private fun render(next: LiveInspectionState) {
     state = next
-    if (!disposed) view?.render(next)
+    if (!disposed) {
+      view?.render(next)
+      project.service<LiveInspectionEditorHints>().show(next.data)
+    }
   }
 
   private fun text(key: String) = JewelToolingBundle.message(key)

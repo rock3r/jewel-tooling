@@ -8,6 +8,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.Project
 import com.intellij.ui.AnimatedIcon
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextArea
@@ -41,6 +42,7 @@ internal data class LiveInspectionState(
 )
 
 internal class LiveInspectionPanel(
+  private val project: Project,
   connect: () -> Unit,
   disconnect: () -> Unit,
   start: () -> Unit,
@@ -174,6 +176,10 @@ internal class LiveInspectionPanel(
     component.repaint()
   }
 
+  fun selectSite(id: Int) {
+    report?.selectSite(id)
+  }
+
   private fun statusIcon(next: LiveInspectionState): Icon =
     when {
       next.phase == LivePhase.UNSUPPORTED ||
@@ -191,7 +197,7 @@ internal class LiveInspectionPanel(
     if (data != null) {
       val current = report
       if (current == null) {
-        val created = RecordingReportPanel(data, embedded = true)
+        val created = RecordingReportPanel(project, data, embedded = true)
         report = created
         body.add(created.component, BorderLayout.CENTER)
       } else current.update(data)

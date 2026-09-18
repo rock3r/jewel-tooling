@@ -52,7 +52,10 @@ Use the project's existing configuration that already starts its development IDE
 ### Read and control the live capture
 
 The tool window shows the target, capture state, completed execution count, and recording window.
-Select a trace site to inspect its details. Filter the table to focus on one composable.
+Select a trace site to inspect its details in the side pane. Filter the table, with completion from recorded compiler text, to focus on one composable.
+Matching source files in this project show inclusive duration in the editor gutter, beside the line the compiler recorded. Each time sits in a small badge. Hover it for its share of recorded inclusive time and the execution count. Those times include nested calls and capture overhead; they are not frame times and do not prove a skip or a performance problem.
+Click a gutter time to select that site in the tool window. Click a file name in the details pane to open that Kotlin file when it resolves in this project or its dependencies.
+
 The recording window is elapsed capture time. Inclusive durations also contain nested calls.
 
 **Waiting for Compose** means that the connection exists but the target has not loaded its Compose runtime yet.
@@ -116,7 +119,7 @@ Mixed evidence stays borderless. For example, a source class does not gain a bor
 The border does not say whether a composable can be skipped.
 
 To change the colours, open **Settings → Editor → Color Scheme → Jewel Tooling**.
-Each state has separate fill and border colours. The defaults adapt to light and dark editor schemes.
+Each stability state has separate fill and border colours. Live gutter durations have ordinary and hot colours. The defaults adapt to light and dark editor schemes.
 The text uses the IDE's standard inlay text colour. Unknown results currently stay borderless.
 
 Hover over a hint for its type, status, evidence, and reason. The longer explanation of stability and skipping is in the function detail view.
@@ -211,19 +214,21 @@ Stop the capture and click **Export Recording** to create a recording file.
 
 Choose **Tools → Open Compose Recording**, or find that action with **Find Action**. Select the file from the demo above, or one exported by your own configured target.
 
-The report shows the target, session, status, recording window, and any incomplete or rejected events. Click a column heading to sort the sites. Select a site to see its full compiler text and executions by thread. You can select and copy the text. Press **Escape** to close the report.
+The report shows the target, session, status, recording window, and any incomplete or rejected events. Click a column heading to sort the sites. Select a site to see its declaration, file link, measurements, and executions by thread. You can select and copy the text. Press **Escape** to close the report.
 
 ![A saved Jewel Standalone recording with execution counts and inclusive durations](images/recording-standalone.png)
 
 ![A saved IJPL recording from the Bazel fixture](images/recording-ijpl.png)
 
 Use **Filter sites** to find text in the full compiler trace description. Matching ignores case and treats punctuation and spaces literally.
+The field offers completion from recorded compiler text, declaration names, and file names.
 For example, enter `example.GreetingRow` to find that call site. Choose **Clear** to restore all rows.
 The result count shows visible sites out of all recorded sites. Filtering does not change session totals or per-site measurements.
 
 An execution is a completed pair of Compose trace callbacks. It can be an initial composition or a later call. The callback does not identify which occurred. Total and mean durations include nested calls and capture overhead. They are not frame times.
 
-A site combines the compiler key and its exact text within one session. Matching function names do not prove matching composition instances. Source navigation stays disabled because the recording contains no verified source map.
+A site combines the compiler key and its exact text within one session. Matching function names do not prove matching composition instances.
+A file name in the details pane is a link when that Kotlin file and package resolve in this project or its dependencies. Unresolved names stay plain text. The recording still has no verified source map.
 
 The report does not show skips, invalidation causes, parameter values, or composition instances. Missing or disabled trace markers can hide activity. An empty recording does not prove that the target did no work.
 

@@ -7,5 +7,7 @@
     <option name="JEWEL_STABILITY_UNSTABLE_BORDER" value="A35E5E"/>
     <option name="JEWEL_STABILITY_UNKNOWN_FILL" value="8796A7"/>
     <option name="JEWEL_STABILITY_UNKNOWN_BORDER" value="64798F"/>
+    <option name="JEWEL_LIVE_GUTTER" value="6B7380"/>
+    <option name="JEWEL_LIVE_GUTTER_HOT" value="C45C5C"/>
   </colors>
 </list>

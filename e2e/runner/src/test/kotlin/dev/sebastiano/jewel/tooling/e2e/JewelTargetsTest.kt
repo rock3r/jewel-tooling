@@ -55,6 +55,7 @@ class JewelTargetsTest {
     "ComplexCondition",
   ) // Keep each target scenario and teardown together.
   private fun runTarget(target: String, oneClick: Boolean = false, mcp: Boolean = false) {
+    requireCompatibleLocalIde()
     val repository = Path.of(System.getProperty("jewel.test.repo"))
     val temporary = Files.createTempDirectory("jewel-$target-").toRealPath()
     val project =
@@ -196,6 +197,28 @@ class JewelTargetsTest {
         liveTarget?.close()
       }
     }
+  }
+
+  private fun requireCompatibleLocalIde() {
+    val local = System.getProperty("jewel.test.idePath") ?: return
+    val expected = System.getProperty("jewel.test.ideBuild")
+    val home = Path.of(local)
+    val info =
+      listOf(
+          home.resolve("Contents/Resources/product-info.json"),
+          home.resolve("product-info.json"),
+        )
+        .firstOrNull { Files.exists(it) } ?: error("No product-info.json under $local")
+    val build =
+      BUILD_NUMBER.find(Files.readString(info))?.groupValues?.get(1)
+        ?: error("Missing buildNumber in $info")
+    check(build == expected) {
+      "JewelTargetsTest requires the pinned IDE $expected. $local is $build."
+    }
+  }
+
+  private companion object {
+    private val BUILD_NUMBER = Regex(""""buildNumber"\s*:\s*"([^"]+)"""")
   }
 
   private fun copyTree(source: Path, destination: Path) {

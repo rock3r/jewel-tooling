@@ -1,17 +1,25 @@
 package dev.sebastiano.jewel.tooling
 
-import com.intellij.ui.DocumentAdapter
+import com.intellij.icons.AllIcons
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionUpdateThread
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.ToggleAction
+import com.intellij.openapi.application.ReadAction
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
+import com.intellij.openapi.project.DumbAware
+import com.intellij.openapi.project.Project
 import com.intellij.ui.OnePixelSplitter
+import com.intellij.ui.TextFieldWithAutoCompletion
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.components.JBTextArea
-import com.intellij.ui.components.JBTextField
 import com.intellij.ui.table.JBTable
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import dev.sebastiano.jewel.tooling.recording.Recording
 import dev.sebastiano.jewel.tooling.recording.SiteSummary
 import java.awt.BorderLayout
-import java.text.NumberFormat
 import java.util.Locale
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -19,7 +27,6 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.ListSelectionModel
 import javax.swing.RowFilter
-import javax.swing.event.DocumentEvent
 import javax.swing.table.AbstractTableModel
 import javax.swing.table.DefaultTableCellRenderer
 import javax.swing.table.TableRowSorter
@@ -28,20 +35,22 @@ import javax.swing.text.DefaultCaret
 private const val NANOS_PER_MILLISECOND = 1_000_000.0
 
 internal class RecordingReportPanel(
+  private val project: Project,
   private var data: RecordingReportData,
   private val embedded: Boolean = false,
 ) {
   private val summaryText = textArea("recording.summary")
-  private val details = textArea("recording.site.details")
+  private val details = RecordingSiteDetailsPanel(::openFile, ::canOpen)
   private val model = SitesModel(data.sites)
   private val sorter = TableRowSorter(model)
   private val filter =
-    JBTextField().apply {
+    TextFieldWithAutoCompletion.create(project, completionItems(data.sites), true, "").apply {
       name = "jewel-recording-filter"
       accessibleContext.accessibleName = JewelToolingBundle.message("recording.filter.accessible")
     }
   private val count = JLabel().apply { putClientProperty("html.disable", true) }
   private var filtering = false
+  private var detailsVisible = true
   private val table =
     JBTable(model).apply {
       name = "jewel-recording-sites"
@@ -55,19 +64,24 @@ internal class RecordingReportPanel(
         preferredWidth = 500
         cellRenderer = DefaultTableCellRenderer().apply { putClientProperty("html.disable", true) }
       }
-      val numberFormat = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 3 }
       setDefaultRenderer(
         Double::class.javaObjectType,
         object : DefaultTableCellRenderer() {
           override fun setValue(value: Any?) {
             horizontalAlignment = RIGHT
-            text = if (value is Number) numberFormat.format(value) else ""
+            text = if (value is Number) LiveInspectionFormat.milliseconds(value.toDouble()) else ""
           }
         },
       )
       selectionModel.addListSelectionListener {
         if (!it.valueIsAdjusting && !filtering) showSelection()
       }
+    }
+  private val splitter =
+    OnePixelSplitter(false, SPLIT).apply {
+      firstComponent = JBScrollPane(table).apply { border = JBUI.Borders.empty() }
+      secondComponent = details.component
+      dividerWidth = 1
     }
 
   val component: JComponent =
@@ -87,15 +101,8 @@ internal class RecordingReportPanel(
         )
       add(
         JPanel(BorderLayout(0, JBUI.scale(FILTER_GAP))).apply {
-          add(filterBar(), BorderLayout.NORTH)
-          add(
-            OnePixelSplitter(true, 0.7f).apply {
-              firstComponent = JBScrollPane(table)
-              secondComponent = JBScrollPane(details)
-              border = null
-            },
-            BorderLayout.CENTER,
-          )
+          add(filterBar(this), BorderLayout.NORTH)
+          add(splitter, BorderLayout.CENTER)
         },
         BorderLayout.CENTER,
       )
@@ -119,9 +126,10 @@ internal class RecordingReportPanel(
     get() = filter
 
   init {
-    filter.document.addDocumentListener(
-      object : DocumentAdapter() {
-        override fun textChanged(event: DocumentEvent) = applyFilter()
+    filter.addDocumentListener(
+      object : com.intellij.openapi.editor.event.DocumentListener {
+        override fun documentChanged(event: com.intellij.openapi.editor.event.DocumentEvent) =
+          applyFilter()
       }
     )
     applyFilter()
@@ -139,6 +147,7 @@ internal class RecordingReportPanel(
     try {
       data = next
       model.replace(next.sites)
+      filter.setVariants(completionItems(next.sites))
       val index = if (sameSession) next.sites.indexOfFirst { it.site.id == selectedId } else -1
       val visible = if (index >= 0) table.convertRowIndexToView(index) else -1
       if (visible >= 0) table.setRowSelectionInterval(visible, visible)
@@ -154,7 +163,17 @@ internal class RecordingReportPanel(
       (table.parent as? javax.swing.JViewport)?.viewPosition = position
   }
 
-  private fun filterBar(): JComponent =
+  fun selectSite(id: Int) {
+    if (filter.text.isNotEmpty()) filter.text = ""
+    val index = data.sites.indexOfFirst { it.site.id == id }
+    val visible = if (index >= 0) table.convertRowIndexToView(index) else -1
+    if (visible < 0) return
+    if (!detailsVisible) setDetailsVisible(true)
+    table.setRowSelectionInterval(visible, visible)
+    table.scrollRectToVisible(table.getCellRect(visible, 0, true))
+  }
+
+  private fun filterBar(host: JComponent): JComponent =
     JPanel(BorderLayout(JBUI.scale(FILTER_GAP), 0)).apply {
       isOpaque = false
       add(
@@ -180,10 +199,41 @@ internal class RecordingReportPanel(
             BorderLayout.WEST,
           )
           add(count, BorderLayout.CENTER)
+          add(detailsToggle(host), BorderLayout.EAST)
         },
         BorderLayout.EAST,
       )
     }
+
+  private fun detailsToggle(host: JComponent): JComponent {
+    val toggle =
+      object :
+        ToggleAction(
+          JewelToolingBundle.message("recording.details.toggle"),
+          JewelToolingBundle.message("recording.details.toggle.description"),
+          AllIcons.Actions.PreviewDetails,
+        ),
+        DumbAware {
+        override fun getActionUpdateThread() = ActionUpdateThread.EDT
+
+        override fun isSelected(event: AnActionEvent) = detailsVisible
+
+        override fun setSelected(event: AnActionEvent, state: Boolean) = setDetailsVisible(state)
+      }
+    val toolbar =
+      ActionManager.getInstance()
+        .createActionToolbar("JewelRecordingDetails", DefaultActionGroup(toggle), true)
+    toolbar.targetComponent = host
+    return toolbar.component
+  }
+
+  private fun setDetailsVisible(visible: Boolean) {
+    detailsVisible = visible
+    details.component.isVisible = visible
+    splitter.proportion = if (visible) SPLIT else 1.0f
+    splitter.revalidate()
+    splitter.repaint()
+  }
 
   private fun applyFilter() {
     val selected = table.selectedRow.takeIf { it >= 0 }?.let { table.convertRowIndexToModel(it) }
@@ -211,7 +261,9 @@ internal class RecordingReportPanel(
   private fun showSelection() {
     val row = table.selectedRow
     if (row < 0) {
-      details.text =
+      details.show(
+        null,
+        emptyMap(),
         if (table.rowCount == 0)
           JewelToolingBundle.message(
             if (data.sites.isEmpty() && filter.text.isEmpty()) {
@@ -222,23 +274,26 @@ internal class RecordingReportPanel(
               else "recording.empty"
             } else "recording.filter.empty"
           )
-        else ""
+        else "",
+      )
       return
     }
     val site = data.sites[table.convertRowIndexToModel(row)]
     val labels = data.recording.threads.associate { it.id to it.name }
-    details.text = buildString {
-      appendLine(site.site.info)
-      appendLine(JewelToolingBundle.message("recording.site.identity", site.site.id, site.site.key))
-      appendLine()
-      appendLine(JewelToolingBundle.message("recording.threads"))
-      site.threads.toSortedMap().forEach { (id, count) ->
-        appendLine(
-          JewelToolingBundle.message("recording.thread", labels[id].orEmpty(), id.toString(), count)
-        )
-      }
+    details.show(site, labels, "")
+  }
+
+  private fun canOpen(location: TraceSiteLocation): Boolean =
+    ReadAction.compute<Boolean, RuntimeException> {
+      !project.isDisposed && TraceSiteLocations.resolve(project, location) != null
     }
-    details.caretPosition = 0
+
+  private fun openFile(location: TraceSiteLocation) {
+    val descriptor =
+      ReadAction.compute<OpenFileDescriptor?, RuntimeException> {
+        if (project.isDisposed) null else TraceSiteLocations.resolve(project, location)
+      } ?: return
+    descriptor.navigate(true)
   }
 
   private fun summary(recording: Recording): String = buildString {
@@ -281,8 +336,21 @@ internal class RecordingReportPanel(
 
   companion object {
     private const val FILTER_GAP = 8
+    private const val SPLIT = 0.68f
     private const val MIN_TEXT_WIDTH = 80
     private const val MIN_TEXT_HEIGHT = 40
+
+    private fun completionItems(sites: List<SiteSummary>): Collection<String> {
+      val values = LinkedHashSet<String>()
+      for (site in sites) {
+        values.add(site.site.info)
+        TraceSiteLocations.parse(site.site.info)?.let { location ->
+          values.add(location.qualifiedName)
+          values.add(location.fileName)
+        }
+      }
+      return values
+    }
 
     private fun textArea(nameKey: String): JBTextArea =
       JBTextArea().apply {

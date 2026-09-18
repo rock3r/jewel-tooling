@@ -7,7 +7,7 @@ import javax.swing.JComponent
 
 internal class RecordingReportDialog(project: Project, data: RecordingReportData) :
   DialogWrapper(project, false, IdeModalityType.MODELESS) {
-  private val view = RecordingReportPanel(data)
+  private val view = RecordingReportPanel(project, data)
 
   init {
     title = JewelToolingBundle.message("recording.report.title")

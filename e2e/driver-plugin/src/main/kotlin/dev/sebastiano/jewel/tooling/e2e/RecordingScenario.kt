@@ -18,8 +18,8 @@ import java.util.concurrent.CompletableFuture
 import javax.imageio.ImageIO
 import javax.swing.JButton
 import javax.swing.JDialog
+import javax.swing.JLabel
 import javax.swing.JTable
-import javax.swing.JTextField
 import javax.swing.text.JTextComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -85,7 +85,7 @@ internal class RecordingScenario(private val project: Project, private val scope
           table.getValueAt(it, 0).toString().contains("example.GreetingRow")
         }
       )
-      val text = children.filterIsInstance<JTextComponent>().joinToString("\n") { it.text }
+      val text = visibleText(children)
       check(text.contains("Stopped by the host")) { text }
       check(text.contains("Abandoned starts: 0") && text.contains("Discarded pairs: 0")) { text }
       check(text.contains("not frame times") && text.contains("Missing trace markers")) { text }
@@ -97,15 +97,12 @@ internal class RecordingScenario(private val project: Project, private val scope
       val children = descendants(window)
       val table = children.filterIsInstance<JTable>().single { it.name == "jewel-recording-sites" }
       val total = table.rowCount
-      children.filterIsInstance<JTextField>().single { it.name == "jewel-recording-filter" }.text =
-        "example.GreetingRow"
+      setNamedText(children, "jewel-recording-filter", "example.GreetingRow")
       check(table.rowCount == 1)
       check(table.getValueAt(0, 0).toString().contains("example.GreetingRow"))
-      check(
-        children.filterIsInstance<JTextComponent>().any {
-          it.text.startsWith("example.GreetingRow") && it.text.contains("Session site")
-        }
-      )
+      val details =
+        visibleText(descendants(children.single { it.name == "jewel-recording-details" }))
+      check(details.contains("example.GreetingRow") && details.contains("Session site")) { details }
       total
     }
     delay(PAINT_SETTLE_MS)
@@ -212,6 +209,24 @@ internal class RecordingScenario(private val project: Project, private val scope
   private fun descendants(component: Component): List<Component> =
     listOf(component) +
       ((component as? Container)?.components?.flatMap { descendants(it) } ?: emptyList())
+
+  private fun visibleText(components: List<Component>): String =
+    components.joinToString("\n") {
+      when (it) {
+        is JTextComponent -> it.text
+        is JLabel -> it.text.orEmpty()
+        is javax.swing.AbstractButton -> it.text.orEmpty()
+        else -> ""
+      }
+    }
+
+  private fun setNamedText(components: List<Component>, name: String, value: String) {
+    val field = components.single { it.name == name }
+    when (field) {
+      is JTextComponent -> field.text = value
+      else -> field.javaClass.getMethod("setText", String::class.java).invoke(field, value)
+    }
+  }
 
   private suspend fun await(stage: String, condition: () -> Boolean) {
     check(
