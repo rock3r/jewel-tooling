@@ -67,12 +67,15 @@ object RecordingCodec {
         }
       }
     } catch (failure: IOException) {
-      throw if (failure is RecordingFormatException) failure
-      else RecordingFormatException(RecordingError.INVALID_FORMAT, failure)
+      throw formatFailure(failure)
     } catch (failure: IllegalArgumentException) {
-      throw RecordingFormatException(RecordingError.INVALID_FORMAT, failure)
+      throw formatFailure(failure)
     }
   }
+
+  private fun formatFailure(failure: Exception): RecordingFormatException =
+    failure as? RecordingFormatException
+      ?: RecordingFormatException(RecordingError.INVALID_FORMAT, failure)
 
   @Suppress("LongMethod")
   fun write(recording: Recording, checkCanceled: () -> Unit = {}): ByteArray {

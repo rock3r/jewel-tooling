@@ -17,6 +17,7 @@ import java.nio.file.attribute.PosixFileAttributeView
 import java.nio.file.attribute.PosixFilePermissions
 import java.security.SecureRandom
 import java.util.EnumSet
+import java.util.Locale
 import java.util.Properties
 import org.jetbrains.annotations.ApiStatus
 
@@ -33,7 +34,9 @@ object InspectionFiles {
   private val fileMode = PosixFilePermissions.fromString("rw-------")
 
   fun nonce(): String =
-    ByteArray(NONCE_BYTES).also(SecureRandom()::nextBytes).joinToString("") { "%02x".format(it) }
+    ByteArray(NONCE_BYTES).also(SecureRandom()::nextBytes).joinToString("") {
+      "%02x".format(Locale.ROOT, it)
+    }
 
   fun createDirectory(parent: Path): Path {
     Files.createDirectories(parent)
@@ -117,21 +120,19 @@ object InspectionFiles {
     require(bytes.size <= MAX_BYTES)
     val posix =
       Files.getFileAttributeView(path.parent, PosixFileAttributeView::class.java, NOFOLLOW_LINKS)
-    val attributes =
-      if (posix != null) arrayOf(PosixFilePermissions.asFileAttribute(fileMode)) else emptyArray()
     val temporary = path.resolveSibling(path.fileName.toString() + ".tmp")
     if (Files.exists(path, NOFOLLOW_LINKS))
       throw java.nio.file.FileAlreadyExistsException(path.toString())
-    Files.newByteChannel(
-        temporary,
-        setOf<java.nio.file.OpenOption>(CREATE_NEW, WRITE, NOFOLLOW_LINKS),
-        *attributes,
-      )
-      .use { channel ->
-        if (posix == null) restrict(temporary)
-        val buffer = java.nio.ByteBuffer.wrap(bytes)
-        while (buffer.hasRemaining()) channel.write(buffer)
-      }
+    val options = setOf<java.nio.file.OpenOption>(CREATE_NEW, WRITE, NOFOLLOW_LINKS)
+    val channel =
+      if (posix != null)
+        Files.newByteChannel(temporary, options, PosixFilePermissions.asFileAttribute(fileMode))
+      else Files.newByteChannel(temporary, options)
+    channel.use { handle ->
+      if (posix == null) restrict(temporary)
+      val buffer = java.nio.ByteBuffer.wrap(bytes)
+      while (buffer.hasRemaining()) handle.write(buffer)
+    }
     Files.move(temporary, path, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
     verify(path)
   }

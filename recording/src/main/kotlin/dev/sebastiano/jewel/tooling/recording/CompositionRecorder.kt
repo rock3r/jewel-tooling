@@ -49,6 +49,7 @@ class CompositionRecorder(
       isActive = true
     }
 
+  @Suppress("LongParameterList") // Matches the Compose compiler start callback arity.
   fun start(
     key: Int,
     dirty1: Int,
@@ -63,6 +64,7 @@ class CompositionRecorder(
     }
   }
 
+  @Suppress("LongParameterList") // Forwards the same compiler start fields into the session.
   private fun acceptStart(
     key: Int,
     dirty1: Int,

@@ -8,6 +8,7 @@ import java.net.Socket
 import java.net.URI
 import java.nio.ByteBuffer
 import java.nio.charset.CodingErrorAction
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.jetbrains.annotations.ApiStatus
@@ -16,7 +17,7 @@ import org.jetbrains.annotations.ApiStatus
 @ApiStatus.Experimental
 class LiveEndpoint private constructor(val port: Int, internal val token: ByteArray) {
   fun connectionString(): String =
-    "jewel-compose://127.0.0.1:$port/" + token.joinToString("") { "%02x".format(it) }
+    "jewel-compose://127.0.0.1:$port/" + token.joinToString("") { "%02x".format(Locale.ROOT, it) }
 
   override fun toString(): String = "LiveEndpoint(port=$port)"
 
