@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "captureId": "f0c29f0b-2446-4389-971e-8b139bd3b305",
+  "captureId": "c7f746a7-6db7-4d0f-9735-50c6fafc3094",
   "inputs": [
     "agent-bridge/build.gradle.kts",
     "agent-bridge/src/main/java/dev/sebastiano/jewel/tooling/bridge/TraceBridge.java",
@@ -165,7 +165,7 @@
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "d1791f0272ebb490b444e269be88e1d6cb12473759c129e29decce932f1230a6",
+  "sourceSha256": "4d64a046386adedd28257e8d5f55cd817c8d0a1951618ebd2eb8c397fc53224d",
   "images": [
     {
       "scenario": "mcp-standalone",
@@ -174,7 +174,7 @@
       "logicalHeight": 842,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "caec7dc2dd0d58e4f2c195cc811364a3c1d92f0378eb8a3e5ca3d45eb34832a4"
+      "sha256": "438d3d05f6a22e9fd01ff3af54b9881779ac55b18906abce6a103ad6dd7f92fb"
     },
     {
       "scenario": "mcp-ijpl",
@@ -183,7 +183,7 @@
       "logicalHeight": 842,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "cc7ebe49bae8b5a5ae66ac3cb6d6c7746b5bb50d8083075d3b323e115d81114a"
+      "sha256": "11611715eb754d86dac68115bb484bf48a43673102c9b683cbbc9d9585cda50a"
     },
     {
       "scenario": "standalone-editor",
@@ -192,7 +192,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "232072485c3468148b98a0fe28c31c02d495e804c7ae3241ab46471d562d507b"
+      "sha256": "28229eaf37605c5091468f813a828ac9fb364ace80fb580b2d70344a6d7d8fd4"
     },
     {
       "scenario": "explanation",
@@ -201,7 +201,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "945d2a277c8f3a3d1885868d483d1d9d89a379f560deb412d7f7af57a6e73190"
+      "sha256": "71f0ada44a4f44d0f74ab80cee2f0f6626262d72979e8debaf0dfee59912e90a"
     },
     {
       "scenario": "details-dark",
@@ -210,7 +210,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "bdcac16c157c458cf3ad0de262385cd0a3e1ddbe9ae49e6dea643aa59f710a50"
+      "sha256": "65413afc0ef5bbbd322e1b03bd90958d5f92fdde6953edfea4d99cf66e53db85"
     },
     {
       "scenario": "details-light",
@@ -219,7 +219,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "c0f21e1c3502f9a30d8d20da0dc0bf5e1fb4d185c884202785a346cfcbb42815"
+      "sha256": "c263e92498be55e39248146d6679aa3e0a3b8ac28324d4907d2850ea154b101b"
     },
     {
       "scenario": "ijpl-editor",
@@ -228,7 +228,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "39a25180a1f4f6afc62226d1a176fc83b5ceccc6ad6b375ae5973738c8550a95"
+      "sha256": "f2226c8f0e0d19071211f3389aa4d0c38327ac1a822712bbbc1425bd94c5e695"
     },
     {
       "scenario": "ijpl-ui",
@@ -237,7 +237,7 @@
       "logicalHeight": 240,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "eade6c1bb87db08fd5ead2988ba65cf0542f6e2b3fd9ed635f8195c946ac9b95"
+      "sha256": "c09570c75d28a711e79bc95d95196c3da87169baaffe445571e2d4483f898d96"
     },
     {
       "scenario": "standalone-ui",
@@ -255,7 +255,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "230bd8c8c725a6a263d8f494c0824cfdd1226451155530a1ae386e8143f875fa"
+      "sha256": "9bbe51bb6157fa435093315d246a5bab2e13491ffaa2bb22c65e52ea12baef03"
     },
     {
       "scenario": "recording-ijpl",
@@ -264,7 +264,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "e37fb6700550974519d6540265fd7537887bb9a8f7ef12999c6eeba239275e96"
+      "sha256": "35f34f8388f9787afca464659f5b431d192bb493eb2081553e0239c13f52a6a5"
     },
     {
       "scenario": "live-standalone",
@@ -273,7 +273,7 @@
       "logicalHeight": 854,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "d986e6792c426cc9e1726b74dc02bf6cf07b6d4aac3c8a2153bbfe7315cdd0c7"
+      "sha256": "6049519c4f9a82db868a67f514527f0a805e0f81ebcfd5d9487bf76fa87d3252"
     },
     {
       "scenario": "live-ijpl",
@@ -282,7 +282,7 @@
       "logicalHeight": 854,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "bd6749414377199c8cd84db0bb4a0de758adbcc2f088330465fa04b8dac0a329"
+      "sha256": "290c5a4d58a22946927205026f579878cb14aaa9f484a8839447278fdc8ab2bc"
     }
   ]
 }
