@@ -2,7 +2,7 @@
 
 Internal note for whoever writes or revises Jewel Tooling markdown. This file is for maintainers. It is not user-facing.
 
-Public pages live under `user-guide/`. They are written so they can later ship as a subtree of [jewel-ui.dev](https://jewel-ui.dev) docs. Internal architecture, testing, and conventions stay in `docs/`.
+Public pages live under `user-guide/`. They ship on the live site at https://jewel-ui.dev/docs/tooling/. Internal architecture, testing, and conventions stay in `docs/`.
 
 Copy editorial rules from the specs house style. The live visual reference is [specs.sebastiano.dev/actions](https://specs.sebastiano.dev/actions/). Adapt layout tokens there when a page is published as HTML. In this repository, the markdown itself must already satisfy the reader contract.
 
