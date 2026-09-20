@@ -1,6 +1,6 @@
 # Install the plugin
 
-Install Jewel Tooling from JetBrains Marketplace in IntelliJ IDEA 2026.2, or build the ZIP with JDK 25 and install it from disk. The plugin bytecode targets JVM 21. The IDE that hosts it uses JBR 25.
+Install Jewel Tooling from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling) in IntelliJ IDEA 2026.2, from a [GitHub Release](https://github.com/rock3r/jewel-tooling/releases), or build the ZIP with JDK 25 and install it from disk. The plugin bytecode targets JVM 21. The IDE that hosts it uses JBR 25.
 
 ```sh
 ./gradlew :buildPlugin

@@ -31,8 +31,9 @@ class ValidationPlanTest(unittest.TestCase):
         for project in validation.KOTLIN_PROJECTS:
             for name in ("ktfmtCheck", "detekt", "detektMain", "detektTest"):
                 self.assertIn(f"{project}:{name}", flattened)
-        self.assertEqual(full[-1][1:], ["scripts/verify-artifacts.py", "--images"])
-        self.assertEqual(full[-2][1:], ["scripts/prepare-distribution.py"])
+        self.assertEqual(full[-1][1:], ["scripts/marketplace-screenshots.py", "--verify"])
+        self.assertEqual(full[-2][1:], ["scripts/verify-artifacts.py", "--images"])
+        self.assertEqual(full[-3][1:], ["scripts/prepare-distribution.py"])
 
     def test_e2e_orders_real_fixture_preparation_before_maintained_suite(self):
         plan = validation.commands("e2e", ide_path="/a path/IDE.app")

@@ -4,7 +4,7 @@ Jewel Tooling is an IntelliJ IDEA plugin for Compose UI authors. It shows a stat
 
 You do not add a dependency, change application source, or start a server for the editor hints. Live inspection uses a bundled agent on a temporary copy of a run configuration you already have.
 
-This is the 0.9.0 distribution. It targets IntelliJ IDEA 2026.2.0.1 (build 262.8665.337) with the bundled Kotlin plugin in K2 mode. Install it from JetBrains Marketplace when the listing is live, or from the ZIP built in this repository.
+This is the 0.9.0 distribution. It targets IntelliJ IDEA 2026.2.0.1 (build 262.8665.337) with the bundled Kotlin plugin in K2 mode. Install it from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling), from a [GitHub Release](https://github.com/rock3r/jewel-tooling/releases), or from the ZIP built in this repository.
 
 ## What you get
 

@@ -48,6 +48,7 @@ def commands(profile, *, windows=False, python=sys.executable, ide_path=None):
         [gradle, "-p", "fixtures/standalone", ":detektMain", ":detektTest"],
         py("scripts/prepare-distribution.py"),
         py("scripts/verify-artifacts.py", "--images"),
+        py("scripts/marketplace-screenshots.py", "--verify"),
     ]
     if profile == "fast":
         return analysis

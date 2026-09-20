@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "captureId": "b9ed2b98-62ca-4a0c-b633-743fb46b616d",
+  "captureId": "1ef6f08b-ac68-4bea-b1f9-12bdf2b06687",
   "inputs": [
     "agent-bridge/build.gradle.kts",
     "agent-bridge/src/main/java/dev/sebastiano/jewel/tooling/bridge/TraceBridge.java",
@@ -171,7 +171,7 @@
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "2352ee146d35f9be1481f8dfe44c2ff823177784135e45f9194854ae4f1dd28e",
+  "sourceSha256": "b79ba5c432108e15b1ffbf3eac567cda407dcc0efc8e1cb0ffab4aac45b9c2cc",
   "images": [
     {
       "scenario": "mcp-standalone",
@@ -180,7 +180,7 @@
       "logicalHeight": 842,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "171fdbc31dce1812442e49fc9209f1195cfa62f136e160bffb2662d1b8d59cd7"
+      "sha256": "2f8fac14f89018e4f87ca271a000724f8e8ce55e261b3ca9f7e5f941f3a617ad"
     },
     {
       "scenario": "mcp-ijpl",
@@ -189,25 +189,25 @@
       "logicalHeight": 842,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "903045bc8a4ceb7bc33be8e0abf1f9615128ac29279c38f02adbc65817ce1284"
+      "sha256": "a6aa8a8b9d71a0bad23823f92c71a70b31ef8706ab6dfd23982c5ed4410fc53d"
     },
     {
       "scenario": "standalone-editor",
       "path": "user-guide/images/standalone-editor.png",
       "logicalWidth": 858,
-      "logicalHeight": 555,
+      "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "3af342a61d616fb17811533114bec108515615408ddf5287875fa9037b971856"
+      "sha256": "125a342b58f807223d3274aa4155cc5f3e3cec8f6c3a8259137d3b3898fb0547"
     },
     {
       "scenario": "explanation",
       "path": "user-guide/images/explanation.png",
       "logicalWidth": 858,
-      "logicalHeight": 555,
+      "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "2aec93b1fb0c9388538cb54fc913c04df53182bfbcd4a2d9441c38f734fab3d2"
+      "sha256": "40e599e575fd07249e7abb0ead0d39e71f2b65364bfcbacecc38e689200052b6"
     },
     {
       "scenario": "details-dark",
@@ -225,7 +225,7 @@
       "logicalHeight": 559,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "c0f21e1c3502f9a30d8d20da0dc0bf5e1fb4d185c884202785a346cfcbb42815"
+      "sha256": "e52604e1236ac92f7a4558021a0546783083d6163d0d2f8b6e2ef7f23f653e18"
     },
     {
       "scenario": "ijpl-editor",
@@ -234,7 +234,7 @@
       "logicalHeight": 620,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "95a61820bad3cbf6156c4b3567985f55a983a248f62048e6ca3003dde774aec2"
+      "sha256": "4efca2a9b7f7e32594962f56ff2d53e92d705d5e9ac401ce95ce79899f3e0fc4"
     },
     {
       "scenario": "ijpl-ui",
@@ -261,7 +261,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "80963d5fcd59cb8b182756b76ae61b5496d9bfbe2bbbd07568f42016bec45271"
+      "sha256": "4b10df75dbade01c4f8895cd5855e461259b0e4212e1f00c2624c3c93eda4c09"
     },
     {
       "scenario": "recording-ijpl",
@@ -270,7 +270,7 @@
       "logicalHeight": 698,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "5d645652693e760c287456556150558469ffcacd9b6be2c85502058302d08788"
+      "sha256": "5dbe6c26220eef593537c573e10165b25b61d4a182a5d69ebf6c303bc7d75fff"
     },
     {
       "scenario": "live-standalone",
@@ -279,7 +279,7 @@
       "logicalHeight": 854,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "ec5de350b70d080bbd01c020c537fe3f1e71af6fbc877d6fa5351e93131747ba"
+      "sha256": "7b13f890cf62ef6d9948ac92bfd24a9610b46625affd8c5a7beaf3d6e5adfee2"
     },
     {
       "scenario": "live-ijpl",
@@ -288,7 +288,7 @@
       "logicalHeight": 854,
       "scaleX": 2,
       "scaleY": 2,
-      "sha256": "2b08825f82e9998d8a3b4586955cef7183cf5828a6f4934e43159fe1775fcaac"
+      "sha256": "78fbfcd9d11f68fd561740952c364d86e9061e2ccc9dd613c775cac8614b79c4"
     }
   ]
 }

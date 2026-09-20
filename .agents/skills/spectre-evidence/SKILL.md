@@ -35,6 +35,7 @@ If an agent's Gradle workflow requires a wrapper, execute the script's individua
 Keep the begin step before builds and the final promotion after every required scenario passes.
 
 Inspect all thirteen images at native resolution. Check light/dark states, circle borders, text hierarchy, focus, and splitter contrast.
+Promotion also rewrites `user-guide/images/marketplace/{editor,live,recording}.png` at 1280×800. Inspect those three before a Marketplace upload. Captions are in `captions.txt` beside them.
 Promote only matching successful results. Never upscale an image, replace provenance hashes by hand, or promote a partial run.
 If capture fails or inputs change, retain diagnostic artifacts and start a fresh capture after the cause is fixed.
 

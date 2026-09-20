@@ -32,4 +32,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" build/distributions/jewel-tooling-*.zip build/distributions/jewel-tooling-*.zip.sha256 --verify-tag --generate-notes --title "Jewel Tooling $RELEASE_TAG"
+        run: |
+          assets=(build/distributions/jewel-tooling-*.zip build/distributions/jewel-tooling-*.zip.sha256)
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; leaving published assets unchanged"
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" --verify-tag --generate-notes --title "Jewel Tooling $RELEASE_TAG"
+          fi

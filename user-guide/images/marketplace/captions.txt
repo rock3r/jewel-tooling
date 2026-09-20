@@ -1,0 +1,9 @@
+editor.png
+Compose parameter stability hints beside @Composable parameters.
+
+live.png
+Live recompositions from a local run, with execution counts and inclusive durations.
+
+recording.png
+A saved Compose recording with a site filter and per-site inclusive duration.
+

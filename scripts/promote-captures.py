@@ -112,7 +112,14 @@ def main():
         shutil.copyfile(source, target)
     (destination / "manifest.json").write_text(json.dumps({"schemaVersion": 1, "captureId": args.capture_id, "inputs": inputs, "sourceSha256": digest, "images": images}, indent=2) + "\n")
     verify.verify_images(ROOT)
+    market = importlib.util.spec_from_file_location(
+        "marketplace_screenshots", ROOT / "scripts/marketplace-screenshots.py"
+    )
+    marketplace = importlib.util.module_from_spec(market)
+    market.loader.exec_module(marketplace)
+    marketplace.write(ROOT)
     print("Promoted thirteen verified native Retina captures")
+    print("Wrote three Marketplace screenshots at 1280x800")
 
 
 if __name__ == "__main__":

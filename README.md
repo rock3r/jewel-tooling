@@ -1,10 +1,23 @@
 # Jewel Tooling
 
+[![Version](https://img.shields.io/jetbrains/plugin/v/34392-jewel-tooling.svg)](https://plugins.jetbrains.com/plugin/34392-jewel-tooling)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/34392-jewel-tooling.svg)](https://plugins.jetbrains.com/plugin/34392-jewel-tooling)
+
 Jewel Tooling is an IntelliJ IDEA plugin for Compose UI authors. It shows a stability estimate beside each `@Composable` parameter, and it can record live composition activity from a local development run.
 
 You do not add a dependency, change application source, or start a server for the editor hints. Live inspection launches a temporary copy of a run configuration you already have.
 
-This is the 0.9.0 distribution for IntelliJ IDEA 2026.2. Install it from JetBrains Marketplace when the listing is live, or from the ZIP built in this repository.
+This is the 0.9.0 distribution for IntelliJ IDEA 2026.2. Install it from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling), from a [GitHub Release](https://github.com/rock3r/jewel-tooling/releases), or from the ZIP built in this repository.
+
+GitHub README pages cannot run the Marketplace install widget. On jewel-ui.dev or another HTML page, use:
+
+```html
+<div id="jewel-tooling-install"></div>
+<script src="https://plugins.jetbrains.com/assets/scripts/mp-widget.js"></script>
+<script>
+  MarketplaceWidget.setupMarketplaceWidget('install', 34392, "#jewel-tooling-install");
+</script>
+```
 
 ## What it looks like
 
@@ -18,7 +31,7 @@ Hints appear after parameter types in project files and in attached dependency K
 
 ## Try it
 
-Build with JDK 25, then install `build/distributions/jewel-tooling-0.9.0.zip` from JetBrains Marketplace or through **Settings → Plugins → gear → Install Plugin from Disk**.
+Build with JDK 25, then install `build/distributions/jewel-tooling-0.9.0.zip` from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling) or through **Settings → Plugins → gear → Install Plugin from Disk**.
 
 ```sh
 ./gradlew :buildPlugin

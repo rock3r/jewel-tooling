@@ -88,7 +88,8 @@ python3 scripts/verify-artifacts.py --images
 
 The script creates one capture ID, snapshots source inputs, runs the fixtures, and promotes only matching successful captures.
 Keep all thirteen images and `user-guide/images/manifest.json` together. Never upscale a 1x image or edit the manifest to bless stale captures.
-A changed input requires a fresh capture. Include the new images and manifest with the input change. Linux Xvfb evidence does not replace Retina assets.
+Promotion also rewrites three JetBrains Marketplace crops in `user-guide/images/marketplace/` at 1280×800. Do not upscale those either. Upload them in Plugin Screenshots, not in the listing HTML. Captions are in `user-guide/images/marketplace/captions.txt`.
+A changed input requires a fresh capture. Include the new images, manifest, and Marketplace crops with the input change. Linux Xvfb evidence does not replace Retina assets.
 See the [capture skill](../.agents/skills/spectre-evidence/SKILL.md) for failure handling.
 
 ## Local distribution

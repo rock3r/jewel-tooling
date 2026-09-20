@@ -20,3 +20,5 @@ First public distribution for IntelliJ IDEA 2026.2 (build 262.8665.337) with bun
 - Colour settings for stability hints and live duration badges
 
 See the [user guide](user-guide/README.md) for behaviour and limits.
+
+[0.9.0]: https://github.com/rock3r/jewel-tooling/releases/tag/v0.9.0
