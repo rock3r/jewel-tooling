@@ -20,7 +20,7 @@ dependencies {
     compileOnly(kotlin("stdlib"))
     compileOnly(project(":recording"))
     compileOnly("androidx.compose.runtime:runtime-desktop:1.11.1")
-    compileOnly("org.jetbrains:annotations:26.0.2")
+    compileOnly("org.jetbrains:annotations:26.1.0")
     testImplementation(kotlin("stdlib"))
     testImplementation(project(":recording"))
     testImplementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
