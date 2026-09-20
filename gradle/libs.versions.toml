@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.4.0"
+kotlin = "2.4.20"
 intellijPlatform = "2.19.0"
 idea = "2026.2.0.1"
 ideaBuild = "262.8665.337"
