@@ -7,16 +7,16 @@ import com.intellij.execution.runners.ProgramRunner
 import com.intellij.openapi.components.service
 
 internal class ComposeInspectionProgramRunner : ProgramRunner<RunnerSettings> {
-  override fun getRunnerId(): String = ID
+    override fun getRunnerId(): String = ID
 
-  override fun canRun(executorId: String, profile: RunProfile): Boolean =
-    executorId == ComposeInspectionExecutor.ID && ComposeInspectionExecutor.supports(profile)
+    override fun canRun(executorId: String, profile: RunProfile): Boolean =
+        executorId == ComposeInspectionExecutor.ID && ComposeInspectionExecutor.supports(profile)
 
-  override fun execute(environment: ExecutionEnvironment) {
-    environment.project.service<InspectionLaunchService>().run(environment)
-  }
+    override fun execute(environment: ExecutionEnvironment) {
+        environment.project.service<InspectionLaunchService>().run(environment)
+    }
 
-  companion object {
-    const val ID = "JewelComposeInspectionRunner"
-  }
+    companion object {
+        const val ID = "JewelComposeInspectionRunner"
+    }
 }

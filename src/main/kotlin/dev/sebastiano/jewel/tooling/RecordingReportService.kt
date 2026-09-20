@@ -32,68 +32,73 @@ internal data class RecordingReportData(val recording: Recording, val sites: Lis
 internal class RecordingReportService
 @JvmOverloads
 constructor(
-  private val project: Project,
-  private val scope: CoroutineScope,
-  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val project: Project,
+    private val scope: CoroutineScope,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Disposable {
-  private var request: Job? = null
-  private var dialog: RecordingReportDialog? = null
-  @Volatile private var disposed = false
+    private var request: Job? = null
+    private var dialog: RecordingReportDialog? = null
+    @Volatile private var disposed = false
 
-  /** Opens one report. Call on EDT. A later request cancels the earlier import. */
-  fun open(path: Path, requestScope: CoroutineScope = scope) {
-    request?.cancel()
-    if (disposed || project.isDisposed) return
-    val modality = ModalityState.current().asContextElement()
-    request =
-      requestScope.launch(ioDispatcher + modality) {
-        val context = currentCoroutineContext()
-        val data =
-          try {
-            val recording = RecordingFiles.read(path) { context.ensureActive() }
-            RecordingReportData(recording, recording.summarize { context.ensureActive() })
-          } catch (exception: IOException) {
-            withContext(Dispatchers.EDT) {
-              if (!disposed && !project.isDisposed) {
-                Messages.showErrorDialog(
-                  project,
-                  errorMessage(exception),
-                  JewelToolingBundle.message("recording.open.title"),
-                )
-              }
+    /** Opens one report. Call on EDT. A later request cancels the earlier import. */
+    fun open(path: Path, requestScope: CoroutineScope = scope) {
+        request?.cancel()
+        if (disposed || project.isDisposed) return
+        val modality = ModalityState.current().asContextElement()
+        request =
+            requestScope.launch(ioDispatcher + modality) {
+                val context = currentCoroutineContext()
+                val data =
+                    try {
+                        val recording = RecordingFiles.read(path) { context.ensureActive() }
+                        RecordingReportData(
+                            recording,
+                            recording.summarize { context.ensureActive() },
+                        )
+                    } catch (exception: IOException) {
+                        withContext(Dispatchers.EDT) {
+                            if (!disposed && !project.isDisposed) {
+                                Messages.showErrorDialog(
+                                    project,
+                                    errorMessage(exception),
+                                    JewelToolingBundle.message("recording.open.title"),
+                                )
+                            }
+                        }
+                        return@launch
+                    }
+                withContext(Dispatchers.EDT) {
+                    context.ensureActive()
+                    if (!disposed && !project.isDisposed) show(data)
+                }
             }
-            return@launch
-          }
-        withContext(Dispatchers.EDT) {
-          context.ensureActive()
-          if (!disposed && !project.isDisposed) show(data)
-        }
-      }
-  }
+    }
 
-  private fun show(data: RecordingReportData) {
-    dialog?.close(DialogWrapper.CANCEL_EXIT_CODE)
-    val created = RecordingReportDialog(project, data)
-    dialog = created
-    Disposer.register(created.disposable, Disposable { if (dialog === created) dialog = null })
-    created.show()
-    Disposer.register(this, created.disposable)
-  }
+    private fun show(data: RecordingReportData) {
+        dialog?.close(DialogWrapper.CANCEL_EXIT_CODE)
+        val created = RecordingReportDialog(project, data)
+        dialog = created
+        Disposer.register(created.disposable, Disposable { if (dialog === created) dialog = null })
+        created.show()
+        Disposer.register(this, created.disposable)
+    }
 
-  private fun errorMessage(exception: IOException): String =
-    JewelToolingBundle.message(
-      when ((exception as? RecordingFormatException)?.code) {
-        RecordingError.UNSUPPORTED_VERSION -> "recording.error.version"
-        RecordingError.TOO_LARGE -> "recording.error.size"
-        RecordingError.INVALID_FORMAT -> "recording.error.format"
-        null -> "recording.error.read"
-      }
-    )
+    private fun errorMessage(exception: IOException): String = recordingOpenError(exception)
 
-  override fun dispose() {
-    disposed = true
-    request?.cancel()
-    request = null
-    dialog = null
-  }
+    override fun dispose() {
+        disposed = true
+        request?.cancel()
+        request = null
+        dialog = null
+    }
 }
+
+internal fun recordingOpenError(exception: IOException): String =
+    JewelToolingBundle.message(
+        when ((exception as? RecordingFormatException)?.code) {
+            RecordingError.UNSUPPORTED_VERSION -> "recording.error.version"
+            RecordingError.TOO_LARGE -> "recording.error.size"
+            RecordingError.INVALID_FORMAT -> "recording.error.format"
+            null -> "recording.error.read"
+        }
+    )

@@ -15,36 +15,36 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RequestJobsTest {
-  @Test(timeout = 5000)
-  fun closeWaitsForRequestCleanup() = runBlocking {
-    val requests = RequestJobs()
-    val started = CompletableDeferred<Unit>()
-    var cleaned = false
-    val handler = launch {
-      coroutineScope {
-        assertTrue(requests.admit(currentCoroutineContext().job))
-        started.complete(Unit)
-        try {
-          awaitCancellation()
-        } finally {
-          withContext(NonCancellable) {
-            delay(50)
-            cleaned = true
-          }
+    @Test(timeout = 5000)
+    fun closeWaitsForRequestCleanup() = runBlocking {
+        val requests = RequestJobs()
+        val started = CompletableDeferred<Unit>()
+        var cleaned = false
+        val handler = launch {
+            coroutineScope {
+                assertTrue(requests.admit(currentCoroutineContext().job))
+                started.complete(Unit)
+                try {
+                    awaitCancellation()
+                } finally {
+                    withContext(NonCancellable) {
+                        delay(50)
+                        cleaned = true
+                    }
+                }
+            }
         }
-      }
+        started.await()
+        requests.close()
+        assertTrue(cleaned)
+        handler.join()
     }
-    started.await()
-    requests.close()
-    assertTrue(cleaned)
-    handler.join()
-  }
 
-  @Test(timeout = 5000)
-  fun closingAdmissionRejectsLaterRequestJobs() = runBlocking {
-    val requests = RequestJobs()
-    requests.close()
-    coroutineScope { assertFalse(requests.admit(currentCoroutineContext().job)) }
-    requests.close()
-  }
+    @Test(timeout = 5000)
+    fun closingAdmissionRejectsLaterRequestJobs() = runBlocking {
+        val requests = RequestJobs()
+        requests.close()
+        coroutineScope { assertFalse(requests.admit(currentCoroutineContext().job)) }
+        requests.close()
+    }
 }

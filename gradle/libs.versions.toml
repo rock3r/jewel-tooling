@@ -6,8 +6,9 @@ ideaBuild = "262.8665.337"
 spectre = "0.6.0"
 compose = "1.10.3"
 jewel = "0.38.0-262.8665.351"
-ktfmt = "0.26.0"
-detekt = "2.0.0-alpha.3"
+ktfmt = "0.27.0"
+detekt = "2.0.0-alpha.6"
+kover = "0.9.9"
 junit = "5.11.4"
 junit4 = "4.13.2"
 coroutines = "1.10.2"
@@ -19,3 +20,4 @@ composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "k
 compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 ktfmt = { id = "com.ncorti.ktfmt.gradle", version.ref = "ktfmt" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

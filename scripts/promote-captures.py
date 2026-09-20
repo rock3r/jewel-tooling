@@ -96,7 +96,7 @@ def main():
     ]
     images = []
     pending = []
-    destination = ROOT / "docs/images"
+    destination = ROOT / "user-guide/images"
     destination.mkdir(parents=True, exist_ok=True)
     for scenario, folder, filename, metadata in captures:
         entry = json.loads((folder / metadata).read_text())

@@ -1,8 +1,8 @@
 # Static analysis
 
-ktfmt owns formatting. Every Kotlin module uses Google style with two-space indentation.
-Detekt uses the pinned 2.0.0-alpha.3 version. Keep its default design thresholds and the existing Compose naming exception.
-Do not add a formatting rule set, baseline, blanket suppression, or weaker threshold to obtain a green build.
+ktfmt owns formatting. Every Kotlin module uses kotlinLangStyle.
+Detekt uses the pinned 2.0.0-alpha.6 version with the Spectre complexity and naming thresholds in `config/detekt.yml`.
+Keep the existing Compose naming exception. Do not add a formatting rule set, baseline, blanket suppression, or weaker threshold to obtain a green build.
 
 ## Coverage
 
@@ -25,7 +25,7 @@ Gradle DSL compilation checks script types; ordinary Detekt does not model Gradl
 
 The supplemental task loads `io.nlopez.compose.rules:detekt:0.6.0` through an isolated plugin classpath.
 The [upstream compatibility table](https://mrmans0n.github.io/compose-rules/detekt/) places this version on Detekt 2.x.
-Its published dependency matches alpha.3. Validate both task execution and findings before adopting newer versions.
+Keep this Compose rules pin. Validate both task execution and findings before adopting a newer Compose rules version.
 
 `config/detekt-compose.yml` selects naming, parameter order, modifier, mutable parameter, content return, and remember checks.
 The provider also retains its active defaults, including the missing-modifier check.

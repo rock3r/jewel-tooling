@@ -1,43 +1,40 @@
 # Contributing
 
-Use JDK 25, Python 3.10+, and the checked-in Gradle wrapper.
-Gradle provisions the pinned compilation toolchains. The first build needs network access for dependencies and the IDE distribution.
-Bazelisk and a graphical session are required only for the integration workflows.
-Keep dependency versions pinned and use public repositories. Local Maven repositories are not supported.
+Use JDK 25, Python 3.10+, and the checked-in Gradle wrapper. Gradle provisions the pinned compilation toolchains. The first build needs network access for dependencies and the IDE distribution. Bazelisk and a graphical session are required only for the integration workflows. Keep dependency versions pinned and use public repositories. Local Maven repositories are not supported.
 
-Start with [AGENTS.md](AGENTS.md). Use the [architecture](docs/architecture.md),
-[conventions](docs/conventions.md), [testing](docs/testing.md), and [static analysis](docs/static-analysis.md) guides for implementation work.
-The [user guide](docs/user-guide.md) describes supported behavior.
+Start with [AGENTS.md](AGENTS.md). Use the [architecture](docs/architecture.md), [conventions](docs/conventions.md), [testing](docs/testing.md), and [static analysis](docs/static-analysis.md) guides for implementation work. The [user guide](user-guide/README.md) describes supported behaviour. Follow [docs style](docs/DOCS-STYLE.md) when you write public pages.
 
 ```sh
 python3 scripts/validate.py fast
 python3 scripts/validate.py full
 ```
 
-Inspect `git status --short` before and after work. Keep unrelated edits intact.
-Report checks that fail before your change separately from regressions.
-Do not change existing implementation files owned by concurrent tasks without coordination.
-Use `.plans/` for local proposals. Do not link public documents to that ignored directory.
+Inspect `git status --short` before and after work. Keep unrelated edits intact. Report checks that fail before your change separately from regressions. Do not change existing implementation files owned by concurrent tasks without coordination. Use `.plans/` for local proposals. Do not link public documents to that ignored directory.
 
 ## Agent discovery
 
-`AGENTS.md` is the canonical instruction file. `CLAUDE.md` links to it.
-Each directory under `.claude/skills/` links to the matching directory under `.agents/skills/`.
-Edit only the canonical files. No hook or global permission configuration is required.
+`AGENTS.md` is the canonical instruction file. Each workflow under `.agents/skills/` is the maintained skill for that task. Edit only those files. No hook or global permission configuration is required.
 
-On Windows, enable Developer Mode or use an account that can create symbolic links.
-Clone with `git -c core.symlinks=true clone <repository-url>`.
-For an existing checkout, enable `core.symlinks` locally and restore only the tracked symlinks after preserving local edits.
-A plain file containing a link target is not a working symlink. Run `python3 scripts/check-doc-links.py` to verify discovery.
-Use `python` if your Python 3 installation does not provide `python3`.
-The validation runner uses `gradlew.bat` on Windows. Headed Windows E2E and capture are not yet validated.
+The validation runner uses `gradlew.bat` on Windows. Headed Windows E2E and capture are not yet validated. Use `python` if your Python 3 installation does not provide `python3`.
+
+## Code style
+
+Kotlin uses ktfmt **kotlinLangStyle** (4-space indentation, kotlinlang.org layout). Keep ktfmt as the only formatter. Do not add formatter overlap, baselines, or blanket suppressions. See [conventions](docs/conventions.md) and [static analysis](docs/static-analysis.md).
 
 ## Review and publication
 
-Keep changes small enough to review. Include the behavior change, validation evidence, and known limits.
-Do not include private project names, machine paths, credentials, or connection tokens in public artifacts.
-Contributions use the repository's [Apache 2.0 license](LICENSE).
+Keep changes small enough to review. Include the behaviour change, validation evidence, and known limits. Do not include private project names, machine paths, credentials, or connection tokens in public artifacts. Contributions use the repository's [Apache 2.0 license](LICENSE).
 
-This checkout is under local review. Do not push, publish, create a repository or PR, or release without user approval.
-Public publication also waits for the user to test the plugin.
-The existing release workflow reacts to tags; do not create or push a release tag during local validation.
+The public repository is [rock3r/jewel-tooling](https://github.com/rock3r/jewel-tooling). Do not push, create a PR, or release without user approval. Marketplace publication also waits for the user to test the plugin. The existing release workflow reacts to tags; do not create or push a release tag during local validation.
+
+JetBrains Marketplace signing credentials live in 1Password as **Jewel Tooling Marketplace signing**. Local `:buildPlugin` stays unsigned when these environment variables are unset:
+
+- `JEWEL_TOOLING_MARKETPLACE_CERT_CHAIN`
+- `JEWEL_TOOLING_MARKETPLACE_PRIVATE_KEY`
+- `JEWEL_TOOLING_MARKETPLACE_PRIVATE_KEY_PASSWORD`
+
+Do not copy keys into the checkout.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the reporting channel once the repository is public.

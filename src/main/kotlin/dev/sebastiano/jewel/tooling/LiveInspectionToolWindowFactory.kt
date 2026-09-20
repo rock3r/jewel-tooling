@@ -9,10 +9,18 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.content.ContentFactory
 
 internal class LiveInspectionToolWindowFactory : ToolWindowFactory, DumbAware {
-  override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-    val service = project.service<LiveInspectionService>()
-    val content = ContentFactory.getInstance().createContent(service.createComponent(), "", false)
-    content.setDisposer(Disposable { service.disconnect() })
-    toolWindow.contentManager.addContent(content)
-  }
+    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        val service = project.service<LiveInspectionService>()
+        val content =
+            ContentFactory.getInstance()
+                .createContent(
+                    service.createComponent(),
+                    JewelToolingBundle.message("live.tab"),
+                    false,
+                )
+        content.isCloseable = false
+        content.setDisposer(Disposable { service.disconnect() })
+        toolWindow.component.putClientProperty("HideIdLabel", "true")
+        toolWindow.contentManager.addContent(content)
+    }
 }

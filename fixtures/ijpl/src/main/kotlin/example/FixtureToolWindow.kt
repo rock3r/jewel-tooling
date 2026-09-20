@@ -15,36 +15,36 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import org.jetbrains.jewel.bridge.addComposeTab
 
 class FixtureToolWindow : ToolWindowFactory {
-  override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-    val manualRecording = System.getProperty("jewel.test.agentTarget") != "true"
-    if (manualRecording) FixtureRecording.initialize()
-    if (manualRecording)
-      toolWindow.setTitleActions(
-        listOf(
-          object : DumbAwareAction() {
-            init {
-              templatePresentation.text = "Copy Inspection Connection"
-              templatePresentation.icon = AllIcons.Actions.Copy
-            }
+    override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        val manualRecording = System.getProperty("jewel.test.agentTarget") != "true"
+        if (manualRecording) FixtureRecording.initialize()
+        if (manualRecording)
+            toolWindow.setTitleActions(
+                listOf(
+                    object : DumbAwareAction() {
+                        init {
+                            templatePresentation.text = "Copy Inspection Connection"
+                            templatePresentation.icon = AllIcons.Actions.Copy
+                        }
 
-            override fun actionPerformed(event: AnActionEvent) {
-              FixtureRecording.copyLiveConnection()
-            }
-          }
-        )
-      )
-    if (manualRecording)
-      Disposer.register(
-        toolWindow.disposable,
-        Disposable { FixtureRecording.closeLiveConnection() },
-      )
-    toolWindow.addComposeTab("Jewel fixture", focusOnClickInside = true) {
-      var items by remember { mutableStateOf(listOf("First item")) }
-      GreetingRow(
-        Greeting("A Jewel IntelliJ tool window"),
-        items,
-        onIncrement = { items = items + "Another item" },
-      )
+                        override fun actionPerformed(event: AnActionEvent) {
+                            FixtureRecording.copyLiveConnection()
+                        }
+                    }
+                )
+            )
+        if (manualRecording)
+            Disposer.register(
+                toolWindow.disposable,
+                Disposable { FixtureRecording.closeLiveConnection() },
+            )
+        toolWindow.addComposeTab("Jewel fixture", focusOnClickInside = true) {
+            var items by remember { mutableStateOf(listOf("First item")) }
+            GreetingRow(
+                Greeting("A Jewel IntelliJ tool window"),
+                items,
+                onIncrement = { items = items + "Another item" },
+            )
+        }
     }
-  }
 }

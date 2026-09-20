@@ -1,7 +1,22 @@
 # Security
 
-The v1 plugin analyzes source through the IDE. It does not collect runtime events, send source to a server, or rewrite source annotations.
+Jewel Tooling analyses source through the IDE. Live inspection records Compose trace callbacks from a local development target over authenticated loopback. It does not send source to a remote server or rewrite source annotations.
 
-Report a suspected vulnerability privately through the repository Security tab once this repository is published. Do not post credentials, proprietary source, or sensitive IDE logs in a public issue. Include the plugin version, IDE build, steps to reproduce, and expected impact.
+## Supported versions
+
+| Version | Supported |
+| --- | --- |
+| 0.9.x | Yes |
+| older local builds | No |
 
 Only the latest published plugin version receives security fixes.
+
+## Reporting a vulnerability
+
+Report a suspected vulnerability privately. Do not file a public GitHub issue.
+
+Once [rock3r/jewel-tooling](https://github.com/rock3r/jewel-tooling) is public, use GitHub's private vulnerability reporting flow. Until then, contact the maintainer through [jewel-ui.dev](https://jewel-ui.dev).
+
+Do not post credentials, proprietary source, connection tokens, or sensitive IDE logs in a public issue. Include the plugin version, IDE build, steps to reproduce, and expected impact.
+
+There is no bug bounty programme.

@@ -124,12 +124,12 @@ class ScreenshotProvenanceTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
         (self.root / "input.kt").write_text("original source")
-        images = self.root / "docs/images"
+        images = self.root / "user-guide/images"
         images.mkdir(parents=True)
         entries = []
         for scenario in ["standalone-editor", "standalone-ui", "ijpl-editor", "ijpl-ui", "explanation", "details-dark", "details-light", "recording-standalone", "recording-ijpl", "live-standalone", "live-ijpl", "mcp-standalone", "mcp-ijpl"]:
             data = b"\x89PNG\r\n\x1a\n" + b"\0" * 8 + struct.pack(">II", 200, 100)
-            relative = "docs/images/" + scenario + ".png"
+            relative = "user-guide/images/" + scenario + ".png"
             (self.root / relative).write_bytes(data)
             entries.append({"scenario": scenario, "path": relative, "logicalWidth": 100, "logicalHeight": 50,
                             "scaleX": 2, "scaleY": 2, "sha256": verify.hashlib.sha256(data).hexdigest()})
@@ -141,7 +141,7 @@ class ScreenshotProvenanceTest(unittest.TestCase):
         self.addCleanup(self.patcher.stop)
 
     def write_manifest(self):
-        (self.root / "docs/images/manifest.json").write_text(json.dumps(self.manifest))
+        (self.root / "user-guide/images/manifest.json").write_text(json.dumps(self.manifest))
 
     def test_matching_recorded_provenance(self):
         verify.verify_images(self.root)

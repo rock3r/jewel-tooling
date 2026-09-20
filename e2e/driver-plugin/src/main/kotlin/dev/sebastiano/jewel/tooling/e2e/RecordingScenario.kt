@@ -28,235 +28,252 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** Imports actual target recordings through the production service in a disposable IDE. */
 @Suppress("TooManyFunctions")
 internal class RecordingScenario(private val project: Project, private val scope: CoroutineScope) {
-  private fun loader(pluginId: String): ClassLoader {
-    val descriptor = checkNotNull(PluginManagerCore.getPlugin(PluginId.getId(pluginId)))
-    val loader = checkNotNull(descriptor.pluginClassLoader)
-    check(loader.javaClass.name.contains("PluginClassLoader"))
-    val version =
-      loader
-        .loadClass("com.fasterxml.jackson.core.json.PackageVersion")
-        .getField("VERSION")
-        .get(null)
-    check(version.toString() == "2.19.0")
-    val constraints = loader.loadClass("com.fasterxml.jackson.core.StreamReadConstraints")
-    val builder = constraints.getMethod("builder").invoke(null)
-    builder.javaClass
-      .getMethod("maxNestingDepth", Int::class.javaPrimitiveType)
-      .invoke(builder, MAX_JSON_DEPTH)
-    checkNotNull(builder.javaClass.getMethod("build").invoke(builder))
-    return loader
-  }
+    private fun loader(pluginId: String): ClassLoader {
+        val descriptor = checkNotNull(PluginManagerCore.getPlugin(PluginId.getId(pluginId)))
+        val loader = checkNotNull(descriptor.pluginClassLoader)
+        check(loader.javaClass.name.contains("PluginClassLoader"))
+        val version =
+            loader
+                .loadClass("com.fasterxml.jackson.core.json.PackageVersion")
+                .getField("VERSION")
+                .get(null)
+        check(version.toString() == "2.19.0")
+        val constraints = loader.loadClass("com.fasterxml.jackson.core.StreamReadConstraints")
+        val builder = constraints.getMethod("builder").invoke(null)
+        builder.javaClass
+            .getMethod("maxNestingDepth", Int::class.javaPrimitiveType)
+            .invoke(builder, MAX_JSON_DEPTH)
+        checkNotNull(builder.javaClass.getMethod("build").invoke(builder))
+        return loader
+    }
 
-  private fun targetControl(): Any {
-    val type = loader("dev.sebastiano.jewel.tooling.fixture").loadClass("example.FixtureRecording")
-    return type.getField("INSTANCE").get(null)
-  }
+    private fun targetControl(): Any {
+        val type =
+            loader("dev.sebastiano.jewel.tooling.fixture").loadClass("example.FixtureRecording")
+        return type.getField("INSTANCE").get(null)
+    }
 
-  fun startTarget() {
-    val target = targetControl()
-    target.javaClass.getMethod("start").invoke(target)
-  }
+    fun startTarget() {
+        val target = targetControl()
+        target.javaClass.getMethod("start").invoke(target)
+    }
 
-  fun stopTarget() {
-    val target = targetControl()
-    target.javaClass.getMethod("stop").invoke(target)
-  }
+    fun stopTarget() {
+        val target = targetControl()
+        target.javaClass.getMethod("stop").invoke(target)
+    }
 
-  fun exportTarget(path: Path) {
-    val target = targetControl()
-    target.javaClass.getMethod("export", Path::class.java).invoke(target, path)
-  }
+    fun exportTarget(path: Path) {
+        val target = targetControl()
+        target.javaClass.getMethod("export", Path::class.java).invoke(target, path)
+    }
 
-  @Suppress("LongMethod")
-  suspend fun inspect(path: Path, robot: RobotDriver, output: Path) {
-    check(Files.size(path) > 0)
-    val loaderName = openReport(path)
-    await("initial report opened") { edt { reportWindow() != null } }
-    val window = edt { checkNotNull(reportWindow()) }
-    val evidence = edt {
-      val children = descendants(window)
-      val table = children.filterIsInstance<JTable>().single { it.name == "jewel-recording-sites" }
-      check(table.rowCount > 0)
-      val executions =
-        (0 until table.rowCount).sumOf { (table.getValueAt(it, 1) as Number).toInt() }
-      check(executions > 0)
-      check(
-        (0 until table.rowCount).any {
-          table.getValueAt(it, 0).toString().contains("example.GreetingRow")
+    @Suppress("LongMethod")
+    suspend fun inspect(path: Path, robot: RobotDriver, output: Path) {
+        check(Files.size(path) > 0)
+        val loaderName = openReport(path)
+        await("initial report opened") { edt { reportWindow() != null } }
+        val window = edt { checkNotNull(reportWindow()) }
+        val evidence = edt {
+            val children = descendants(window)
+            val table =
+                children.filterIsInstance<JTable>().single { it.name == "jewel-recording-sites" }
+            check(table.rowCount > 0)
+            val executions =
+                (0 until table.rowCount).sumOf { (table.getValueAt(it, 1) as Number).toInt() }
+            check(executions > 0)
+            check(
+                (0 until table.rowCount).any {
+                    table.getValueAt(it, 0).toString().contains("example.GreetingRow")
+                }
+            )
+            val text = visibleText(children)
+            check(text.contains("Stopped by the host")) { text }
+            check(text.contains("Abandoned starts: 0") && text.contains("Discarded pairs: 0")) {
+                text
+            }
+            check(text.contains("not frame times") && text.contains("Missing trace markers")) {
+                text
+            }
+            check(text.contains(System.getProperty("jewel.test.captureId", "development"))) { text }
+            "executions=$executions; sites=${table.rowCount}; pluginLoader=$loaderName\n$text"
         }
-      )
-      val text = visibleText(children)
-      check(text.contains("Stopped by the host")) { text }
-      check(text.contains("Abandoned starts: 0") && text.contains("Discarded pairs: 0")) { text }
-      check(text.contains("not frame times") && text.contains("Missing trace markers")) { text }
-      check(text.contains(System.getProperty("jewel.test.captureId", "development"))) { text }
-      "executions=$executions; sites=${table.rowCount}; pluginLoader=$loaderName\n$text"
-    }
-    Files.writeString(output.resolve("recording-evidence.txt"), evidence)
-    val totalSites = edt {
-      val children = descendants(window)
-      val table = children.filterIsInstance<JTable>().single { it.name == "jewel-recording-sites" }
-      val total = table.rowCount
-      setNamedText(children, "jewel-recording-filter", "example.GreetingRow")
-      check(table.rowCount == 1)
-      check(table.getValueAt(0, 0).toString().contains("example.GreetingRow"))
-      val details =
-        visibleText(descendants(children.single { it.name == "jewel-recording-details" }))
-      check(details.contains("example.GreetingRow") && details.contains("Session site")) { details }
-      total
-    }
-    delay(PAINT_SETTLE_MS)
-    val region = edt {
-      check(window.height <= MAX_REPORT_HEIGHT) {
-        "Report exceeds its intended initial height: ${window.size}"
-      }
-      Rectangle(window.contentPane.locationOnScreen, window.contentPane.size)
-    }
-    val transform = edt { window.graphicsConfiguration.defaultTransform }
-    val image = WindowCapture.capture(window, region, robot)
-    check(image.width == (region.width * transform.scaleX).toInt())
-    check(image.height == (region.height * transform.scaleY).toInt())
-    ImageIO.write(image, "png", output.resolve("recording.png").toFile())
-    Files.writeString(
-      output.resolve("recording-capture.json"),
-      """{"captureId":"${System.getProperty("jewel.test.captureId", "development")}",
+        Files.writeString(output.resolve("recording-evidence.txt"), evidence)
+        val totalSites = edt {
+            val children = descendants(window)
+            val table =
+                children.filterIsInstance<JTable>().single { it.name == "jewel-recording-sites" }
+            val total = table.rowCount
+            setNamedText(children, "jewel-recording-filter", "example.GreetingRow")
+            check(table.rowCount == 1)
+            check(table.getValueAt(0, 0).toString().contains("example.GreetingRow"))
+            val details =
+                visibleText(descendants(children.single { it.name == "jewel-recording-details" }))
+            check(details.contains("example.GreetingRow") && details.contains("Session site")) {
+                details
+            }
+            total
+        }
+        delay(PAINT_SETTLE_MS)
+        val region = edt {
+            check(window.height <= MAX_REPORT_HEIGHT) {
+                "Report exceeds its intended initial height: ${window.size}"
+            }
+            Rectangle(window.contentPane.locationOnScreen, window.contentPane.size)
+        }
+        val transform = edt { window.graphicsConfiguration.defaultTransform }
+        val image = WindowCapture.capture(window, region, robot)
+        check(image.width == (region.width * transform.scaleX).toInt())
+        check(image.height == (region.height * transform.scaleY).toInt())
+        ImageIO.write(image, "png", output.resolve("recording.png").toFile())
+        Files.writeString(
+            output.resolve("recording-capture.json"),
+            """{"captureId":"${System.getProperty("jewel.test.captureId", "development")}",
         "logicalWidth":${region.width},"logicalHeight":${region.height},
         "scaleX":${transform.scaleX},"scaleY":${transform.scaleY}}""",
-    )
-    val clear = edt {
-      descendants(window).filterIsInstance<JButton>().single {
-        it.name == "jewel-recording-filter-clear"
-      }
-    }
-    val point = edt {
-      clear.locationOnScreen.apply { translate(clear.width / 2, clear.height / 2) }
-    }
-    robot.click(point.x, point.y)
-    await("filter cleared") {
-      edt {
-        descendants(window)
-          .filterIsInstance<JTable>()
-          .single { it.name == "jewel-recording-sites" }
-          .rowCount == totalSites
-      }
-    }
-    Files.writeString(
-      output.resolve("recording-filter.txt"),
-      "PASS: literal filter and Clear restored $totalSites sites",
-    )
-    edt {
-      // Exercise the native Escape binding without depending on another app's keyboard focus.
-      val root = window.rootPane
-      val key = javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)
-      val binding =
-        checkNotNull(root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(key))
-      val action = checkNotNull(root.actionMap.get(binding))
-      check(action.isEnabled)
-      action.actionPerformed(
-        java.awt.event.ActionEvent(root, java.awt.event.ActionEvent.ACTION_PERFORMED, "Escape")
-      )
-    }
-    await("Escape closed the initial report") { edt { reportWindow() == null } }
-  }
-
-  private fun openReport(path: Path): String {
-    val loader = loader("dev.sebastiano.jewel.tooling")
-    val type = loader.loadClass("dev.sebastiano.jewel.tooling.RecordingReportService")
-    edt {
-      val service = project.getService(type)
-      type
-        .getMethod("open", Path::class.java, CoroutineScope::class.java)
-        .invoke(service, path, scope)
-    }
-    return loader.javaClass.name
-  }
-
-  suspend fun verifyUnloadReload(path: Path, output: Path) {
-    openReport(path)
-    await("report opened before unload") { edt { reportWindow() != null } }
-    val id = PluginId.getId("dev.sebastiano.jewel.tooling")
-    val descriptor = checkNotNull(PluginManagerCore.getPluginSet().findInstalledPlugin(id))
-    Files.writeString(output.resolve("recording-lifecycle-stage.txt"), "unload started")
-    check(edt { DynamicPlugins.unloadPlugin(descriptor) }) { "Plugin requires restart to unload" }
-    await("unload closed the report") { edt { reportWindow() == null } }
-    check(edt { ActionManager.getInstance().getAction("JewelTooling.OpenRecording") == null })
-    Files.writeString(output.resolve("recording-lifecycle-stage.txt"), "reload started")
-    check(edt { DynamicPlugins.loadPlugin(descriptor, project) }) { "Plugin reload failed" }
-    await("reload restored the action") {
-      edt { ActionManager.getInstance().getAction("JewelTooling.OpenRecording") != null }
-    }
-    openReport(path)
-    await("report opened after reload") { edt { reportWindow() != null } }
-    val window = edt { checkNotNull(reportWindow()) }
-    check(edt { descendants(window).filterIsInstance<JTable>().any { it.rowCount > 0 } })
-    edt {
-      window.dispatchEvent(
-        java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_CLOSING)
-      )
-    }
-    await("window close dismissed the reloaded report") { edt { reportWindow() == null } }
-    Files.writeString(
-      output.resolve("recording-lifecycle.txt"),
-      "PASS: unload closed the report; reload restored the action; import worked after reload",
-    )
-  }
-
-  private fun reportWindow(): JDialog? =
-    Window.getWindows().filterIsInstance<JDialog>().singleOrNull {
-      it.isShowing && it.title == "Compose Recording"
+        )
+        val clear = edt {
+            descendants(window).filterIsInstance<JButton>().single {
+                it.name == "jewel-recording-filter-clear"
+            }
+        }
+        val point = edt {
+            clear.locationOnScreen.apply { translate(clear.width / 2, clear.height / 2) }
+        }
+        robot.click(point.x, point.y)
+        await("filter cleared") {
+            edt {
+                descendants(window)
+                    .filterIsInstance<JTable>()
+                    .single { it.name == "jewel-recording-sites" }
+                    .rowCount == totalSites
+            }
+        }
+        Files.writeString(
+            output.resolve("recording-filter.txt"),
+            "PASS: literal filter and Clear restored $totalSites sites",
+        )
+        edt {
+            // Exercise the native Escape binding without depending on another app's keyboard focus.
+            val root = window.rootPane
+            val key = javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)
+            val binding =
+                checkNotNull(
+                    root.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW).get(key)
+                )
+            val action = checkNotNull(root.actionMap.get(binding))
+            check(action.isEnabled)
+            action.actionPerformed(
+                java.awt.event.ActionEvent(
+                    root,
+                    java.awt.event.ActionEvent.ACTION_PERFORMED,
+                    "Escape",
+                )
+            )
+        }
+        await("Escape closed the initial report") { edt { reportWindow() == null } }
     }
 
-  private fun descendants(component: Component): List<Component> =
-    listOf(component) +
-      ((component as? Container)?.components?.flatMap { descendants(it) }).orEmpty()
-
-  private fun visibleText(components: List<Component>): String =
-    components.joinToString("\n") {
-      when (it) {
-        is JTextComponent -> it.text
-        is JLabel -> it.text.orEmpty()
-        is javax.swing.AbstractButton -> it.text.orEmpty()
-        else -> ""
-      }
+    private fun openReport(path: Path): String {
+        val loader = loader("dev.sebastiano.jewel.tooling")
+        val type = loader.loadClass("dev.sebastiano.jewel.tooling.RecordingReportService")
+        edt {
+            val service = project.getService(type)
+            type
+                .getMethod("open", Path::class.java, CoroutineScope::class.java)
+                .invoke(service, path, scope)
+        }
+        return loader.javaClass.name
     }
 
-  private fun setNamedText(components: List<Component>, name: String, value: String) {
-    val field = components.single { it.name == name }
-    when (field) {
-      is JTextComponent -> field.text = value
-      else -> field.javaClass.getMethod("setText", String::class.java).invoke(field, value)
+    suspend fun verifyUnloadReload(path: Path, output: Path) {
+        openReport(path)
+        await("report opened before unload") { edt { reportWindow() != null } }
+        val id = PluginId.getId("dev.sebastiano.jewel.tooling")
+        val descriptor = checkNotNull(PluginManagerCore.getPluginSet().findInstalledPlugin(id))
+        Files.writeString(output.resolve("recording-lifecycle-stage.txt"), "unload started")
+        check(edt { DynamicPlugins.unloadPlugin(descriptor) }) {
+            "Plugin requires restart to unload"
+        }
+        await("unload closed the report") { edt { reportWindow() == null } }
+        check(edt { ActionManager.getInstance().getAction("JewelTooling.OpenRecording") == null })
+        Files.writeString(output.resolve("recording-lifecycle-stage.txt"), "reload started")
+        check(edt { DynamicPlugins.loadPlugin(descriptor, project) }) { "Plugin reload failed" }
+        await("reload restored the action") {
+            edt { ActionManager.getInstance().getAction("JewelTooling.OpenRecording") != null }
+        }
+        openReport(path)
+        await("report opened after reload") { edt { reportWindow() != null } }
+        val window = edt { checkNotNull(reportWindow()) }
+        check(edt { descendants(window).filterIsInstance<JTable>().any { it.rowCount > 0 } })
+        edt {
+            window.dispatchEvent(
+                java.awt.event.WindowEvent(window, java.awt.event.WindowEvent.WINDOW_CLOSING)
+            )
+        }
+        await("window close dismissed the reloaded report") { edt { reportWindow() == null } }
+        Files.writeString(
+            output.resolve("recording-lifecycle.txt"),
+            "PASS: unload closed the report; reload restored the action; import worked after reload",
+        )
     }
-  }
 
-  private suspend fun await(stage: String, condition: () -> Boolean) {
-    check(
-      withTimeoutOrNull(CONDITION_TIMEOUT_MS) {
-        while (!condition()) delay(POLL_INTERVAL_MS)
-        true
-      } == true
-    ) {
-      "Recording scenario timed out: $stage"
+    private fun reportWindow(): JDialog? =
+        Window.getWindows().filterIsInstance<JDialog>().singleOrNull {
+            it.isShowing && it.title == "Compose Recording"
+        }
+
+    private fun descendants(component: Component): List<Component> =
+        listOf(component) +
+            ((component as? Container)?.components?.flatMap { descendants(it) }).orEmpty()
+
+    private fun visibleText(components: List<Component>): String =
+        components.joinToString("\n") {
+            when (it) {
+                is JTextComponent -> it.text
+                is JLabel -> it.text.orEmpty()
+                is javax.swing.AbstractButton -> it.text.orEmpty()
+                else -> ""
+            }
+        }
+
+    private fun setNamedText(components: List<Component>, name: String, value: String) {
+        val field = components.single { it.name == name }
+        when (field) {
+            is JTextComponent -> field.text = value
+            else -> field.javaClass.getMethod("setText", String::class.java).invoke(field, value)
+        }
     }
-  }
 
-  @Suppress("TooGenericExceptionCaught")
-  private fun <T> edt(block: () -> T): T {
-    val result = CompletableFuture<T>()
-    ApplicationManager.getApplication().invokeAndWait {
-      try {
-        result.complete(block())
-      } catch (failure: Throwable) {
-        result.completeExceptionally(failure)
-      }
+    private suspend fun await(stage: String, condition: () -> Boolean) {
+        check(
+            withTimeoutOrNull(CONDITION_TIMEOUT_MS) {
+                while (!condition()) delay(POLL_INTERVAL_MS)
+                true
+            } == true
+        ) {
+            "Recording scenario timed out: $stage"
+        }
     }
-    return result.get()
-  }
 
-  companion object {
-    private const val MAX_REPORT_HEIGHT = 800
-    private const val MAX_JSON_DEPTH = 8
-    private const val PAINT_SETTLE_MS = 500L
-    private const val CONDITION_TIMEOUT_MS = 60_000L
-    private const val POLL_INTERVAL_MS = 100L
-  }
+    @Suppress("TooGenericExceptionCaught")
+    private fun <T> edt(block: () -> T): T {
+        val result = CompletableFuture<T>()
+        ApplicationManager.getApplication().invokeAndWait {
+            try {
+                result.complete(block())
+            } catch (failure: Throwable) {
+                result.completeExceptionally(failure)
+            }
+        }
+        return result.get()
+    }
+
+    companion object {
+        private const val MAX_REPORT_HEIGHT = 800
+        private const val MAX_JSON_DEPTH = 8
+        private const val PAINT_SETTLE_MS = 500L
+        private const val CONDITION_TIMEOUT_MS = 60_000L
+        private const val POLL_INTERVAL_MS = 100L
+    }
 }

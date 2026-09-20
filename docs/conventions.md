@@ -1,7 +1,7 @@
 # Conventions
 
 Use Kotlin for new plugin code. Keep existing Java bootstrap code in Java.
-Use two-space ktfmt Google style, including Gradle Kotlin scripts. Keep ktfmt as the only formatter.
+Use ktfmt kotlinLangStyle, including Gradle Kotlin scripts. Keep ktfmt as the only formatter.
 Apply formatting only to files in your change. Do not reformat a concurrent task's files.
 
 ## IDE correctness

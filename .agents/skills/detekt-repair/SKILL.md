@@ -23,7 +23,7 @@ python3 scripts/validate.py fast
 
 Choose only the relevant targeted command first. Use a module prefix such as `:recording:detekt` for module findings.
 Use `./gradlew -p fixtures/standalone :detekt` for the separate standalone build.
-ktfmt Google style remains authoritative. Format only files owned by the change.
+ktfmt kotlinLangStyle remains authoritative. Format only files owned by the change.
 
 Keep the rule, path, task, and result as evidence. Stop repeated runs on an unchanged analyzer crash and diagnose its version/classpath.
 Ordinary checks do not prove type-resolved rules ran. Static checks do not prove runtime behavior or absence of performance defects.

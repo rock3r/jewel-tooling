@@ -5,61 +5,65 @@ import org.jetbrains.annotations.ApiStatus
 
 @ApiStatus.Experimental
 object RecordingLimits {
-  const val EVENTS = 10_000
-  const val SITES = 1_024
-  const val THREADS = 64
-  const val DEPTH = 64
-  const val INFO_BYTES = 1_024
-  const val LABEL_CHARACTERS = 256
-  const val LABEL_BYTES = 1_024
-  const val FILE_BYTES = 8 * 1_024 * 1_024
-  const val DURATION_NS = 3_600_000_000_000L
-  const val SCHEMA_VERSION = 2
-  const val COLLECTOR_VERSION = "1"
-  const val CLOCK_UNIT = "nanoseconds"
-  val CAPABILITIES: Set<String> =
-    java.util.Set.of("paired-composition-trace-events", "inclusive-duration")
+    const val EVENTS = 100_000
+    const val COUNTERS = 10_000
+    const val SITES = 1_024
+    const val THREADS = 64
+    const val DEPTH = 64
+    const val QUEUE = 65_536
+    const val EVENT_RECORD_BYTES = 36
+    const val INFO_BYTES = 1_024
+    const val LABEL_CHARACTERS = 256
+    const val LABEL_BYTES = 1_024
+    const val FILE_BYTES = 24 * 1_024 * 1_024
+    const val SPILL_BYTES = EVENTS.toLong() * EVENT_RECORD_BYTES
+    const val DURATION_NS = 3_600_000_000_000L
+    const val SCHEMA_VERSION = 2
+    const val COLLECTOR_VERSION = "1"
+    const val CLOCK_UNIT = "nanoseconds"
+    val CAPABILITIES: Set<String> =
+        java.util.Set.of("paired-composition-trace-events", "inclusive-duration")
 }
 
 @ApiStatus.Experimental
 enum class CaptureStatus {
-  ACTIVE,
-  STOPPED,
-  TRUNCATED,
-  FAILED,
+    ACTIVE,
+    STOPPED,
+    TRUNCATED,
+    FAILED,
 }
 
 @ApiStatus.Experimental
 enum class StopReason {
-  NONE,
-  MANUAL,
-  EVENT_LIMIT,
-  SITE_LIMIT,
-  THREAD_LIMIT,
-  DEPTH_LIMIT,
-  STRING_LIMIT,
-  DURATION_LIMIT,
-  CLOCK_FAILURE,
-  TARGET_UNAVAILABLE,
-  COUNTER_LIMIT,
+    NONE,
+    MANUAL,
+    EVENT_LIMIT,
+    SITE_LIMIT,
+    THREAD_LIMIT,
+    DEPTH_LIMIT,
+    STRING_LIMIT,
+    DURATION_LIMIT,
+    CLOCK_FAILURE,
+    TARGET_UNAVAILABLE,
+    COUNTER_LIMIT,
 }
 
 /** Labels describe the target. They do not prove its build identity. */
 @ApiStatus.Experimental
 data class CaptureTarget(
-  val displayName: String,
-  val build: String? = null,
-  val runtime: String? = null,
-  val compiler: String? = null,
+    val displayName: String,
+    val build: String? = null,
+    val runtime: String? = null,
+    val compiler: String? = null,
 )
 
 @ApiStatus.Experimental
 data class CaptureFidelity(
-  val abandonedStarts: Int,
-  val discardedPairs: Int,
-  val unmatchedEnds: Int,
-  val rejectedStarts: Int,
-  val laterActivityUnrecorded: Boolean,
+    val abandonedStarts: Int,
+    val discardedPairs: Int,
+    val unmatchedEnds: Int,
+    val rejectedStarts: Int,
+    val laterActivityUnrecorded: Boolean,
 )
 
 @ApiStatus.Experimental data class TraceSite(val id: Int, val key: Int, val info: String)
@@ -69,129 +73,159 @@ data class CaptureFidelity(
 /** One observed pair of callbacks. The duration includes nested calls and capture overhead. */
 @ApiStatus.Experimental
 data class TraceEvent(
-  val siteId: Int,
-  val threadId: Long,
-  val startNs: Long,
-  val endNs: Long,
-  val dirty1: Int,
-  val dirty2: Int,
+    val siteId: Int,
+    val threadId: Long,
+    val startNs: Long,
+    val endNs: Long,
+    val dirty1: Int,
+    val dirty2: Int,
 )
 
 /** A bounded snapshot. No field contains a target object or a source path to open. */
 @ApiStatus.Experimental
 data class Recording(
-  val sessionId: String,
-  val target: CaptureTarget,
-  val durationNs: Long,
-  val status: CaptureStatus,
-  val stopReason: StopReason,
-  val fidelity: CaptureFidelity,
-  val sites: List<TraceSite>,
-  val threads: List<TraceThread>,
-  val events: List<TraceEvent>,
-  val schemaVersion: Int = RecordingLimits.SCHEMA_VERSION,
-  val collectorVersion: String = RecordingLimits.COLLECTOR_VERSION,
-  val clockUnit: String = RecordingLimits.CLOCK_UNIT,
-  val capabilities: Set<String> = RecordingLimits.CAPABILITIES,
+    val sessionId: String,
+    val target: CaptureTarget,
+    val durationNs: Long,
+    val status: CaptureStatus,
+    val stopReason: StopReason,
+    val fidelity: CaptureFidelity,
+    val sites: List<TraceSite>,
+    val threads: List<TraceThread>,
+    val events: List<TraceEvent>,
+    val summaries: List<SiteSummary>? = null,
+    val schemaVersion: Int = RecordingLimits.SCHEMA_VERSION,
+    val collectorVersion: String = RecordingLimits.COLLECTOR_VERSION,
+    val clockUnit: String = RecordingLimits.CLOCK_UNIT,
+    val capabilities: Set<String> = RecordingLimits.CAPABILITIES,
 ) {
-  fun validate(checkCanceled: () -> Unit = {}) {
-    checkCanceled()
-    require(schemaVersion in 1..RecordingLimits.SCHEMA_VERSION)
-    require(schemaVersion != 1 || status != CaptureStatus.ACTIVE)
-    require(collectorVersion == RecordingLimits.COLLECTOR_VERSION)
-    require(clockUnit == RecordingLimits.CLOCK_UNIT)
-    require(capabilities == RecordingLimits.CAPABILITIES)
-    require(UUID.fromString(sessionId).toString() == sessionId)
-    require(validLabel(target.displayName) && target.displayName.isNotBlank())
-    require(
-      listOf(target.build, target.runtime, target.compiler).all { it == null || validLabel(it) }
-    )
-    require(durationNs in 0..RecordingLimits.DURATION_NS)
-    validateStatus()
-    require(
-      listOf(
-          fidelity.abandonedStarts,
-          fidelity.discardedPairs,
-          fidelity.unmatchedEnds,
-          fidelity.rejectedStarts,
+    fun validate(checkCanceled: () -> Unit = {}) {
+        checkCanceled()
+        require(schemaVersion in 1..RecordingLimits.SCHEMA_VERSION)
+        require(schemaVersion != 1 || status != CaptureStatus.ACTIVE)
+        require(collectorVersion == RecordingLimits.COLLECTOR_VERSION)
+        require(clockUnit == RecordingLimits.CLOCK_UNIT)
+        require(capabilities == RecordingLimits.CAPABILITIES)
+        require(UUID.fromString(sessionId).toString() == sessionId)
+        require(validLabel(target.displayName) && target.displayName.isNotBlank())
+        require(
+            listOf(target.build, target.runtime, target.compiler).all {
+                it == null || validLabel(it)
+            }
         )
-        .all { it in 0..RecordingLimits.EVENTS }
-    )
-    require(sites.size <= RecordingLimits.SITES && threads.size <= RecordingLimits.THREADS)
-    require(events.size <= RecordingLimits.EVENTS)
-    val siteIds = HashSet<Int>()
-    val identities = HashSet<Pair<Int, String>>()
-    for (site in sites) {
-      checkCanceled()
-      require(site.id > 0 && siteIds.add(site.id))
-      require(validText(site.info, RecordingLimits.INFO_BYTES, RecordingLimits.INFO_BYTES))
-      require(identities.add(site.key to site.info))
+        require(durationNs in 0..RecordingLimits.DURATION_NS)
+        validateStatus()
+        require(
+            listOf(
+                    fidelity.abandonedStarts,
+                    fidelity.discardedPairs,
+                    fidelity.unmatchedEnds,
+                    fidelity.rejectedStarts,
+                )
+                .all { it in 0..RecordingLimits.EVENTS }
+        )
+        require(sites.size <= RecordingLimits.SITES && threads.size <= RecordingLimits.THREADS)
+        require(events.size <= RecordingLimits.EVENTS)
+        val siteIds = HashSet<Int>()
+        val identities = HashSet<Pair<Int, String>>()
+        for (site in sites) {
+            checkCanceled()
+            require(site.id > 0 && siteIds.add(site.id))
+            require(validText(site.info, RecordingLimits.INFO_BYTES, RecordingLimits.INFO_BYTES))
+            require(identities.add(site.key to site.info))
+        }
+        val threadIds = HashSet<Long>()
+        for (thread in threads) {
+            checkCanceled()
+            require(thread.id > 0 && threadIds.add(thread.id) && validLabel(thread.name))
+        }
+        for (event in events) {
+            checkCanceled()
+            require(event.siteId in siteIds && event.threadId in threadIds)
+            require(event.startNs >= 0 && event.endNs in event.startNs..durationNs)
+        }
+        validateSummaries(siteIds, threadIds, checkCanceled)
     }
-    val threadIds = HashSet<Long>()
-    for (thread in threads) {
-      checkCanceled()
-      require(thread.id > 0 && threadIds.add(thread.id) && validLabel(thread.name))
-    }
-    for (event in events) {
-      checkCanceled()
-      require(event.siteId in siteIds && event.threadId in threadIds)
-      require(event.startNs >= 0 && event.endNs in event.startNs..durationNs)
-    }
-  }
 
-  private fun validateStatus() {
-    require(
-      when (status) {
-        CaptureStatus.ACTIVE -> stopReason == StopReason.NONE
-        CaptureStatus.STOPPED -> stopReason == StopReason.MANUAL
-        CaptureStatus.FAILED ->
-          stopReason in setOf(StopReason.CLOCK_FAILURE, StopReason.TARGET_UNAVAILABLE)
-        CaptureStatus.TRUNCATED ->
-          stopReason != StopReason.NONE &&
-            stopReason != StopReason.MANUAL &&
-            stopReason != StopReason.CLOCK_FAILURE &&
-            stopReason != StopReason.TARGET_UNAVAILABLE
-      }
-    )
-    require(
-      fidelity.laterActivityUnrecorded ==
-        (status == CaptureStatus.TRUNCATED || status == CaptureStatus.FAILED)
-    )
-  }
+    private fun validateSummaries(
+        siteIds: Set<Int>,
+        threadIds: Set<Long>,
+        checkCanceled: () -> Unit,
+    ) {
+        val rows = summaries ?: return
+        require(rows.size <= RecordingLimits.SITES)
+        val seen = HashSet<Int>()
+        var total = 0
+        val siteMap = sites.associateBy { it.id }
+        for (summary in rows) {
+            checkCanceled()
+            require(summary.site.id in siteIds && seen.add(summary.site.id))
+            require(siteMap[summary.site.id] == summary.site)
+            require(summary.executions > 0)
+            require(total + summary.executions <= RecordingLimits.EVENTS)
+            total += summary.executions
+            require(summary.totalNs >= 0)
+            require(summary.threads.isNotEmpty() && summary.threads.size <= RecordingLimits.THREADS)
+            require(
+                summary.threads.all { (id, count) -> id in threadIds && count > 0 } &&
+                    summary.threads.values.sum() == summary.executions
+            )
+        }
+    }
+
+    private fun validateStatus() {
+        require(
+            when (status) {
+                CaptureStatus.ACTIVE -> stopReason == StopReason.NONE
+                CaptureStatus.STOPPED -> stopReason == StopReason.MANUAL
+                CaptureStatus.FAILED ->
+                    stopReason in setOf(StopReason.CLOCK_FAILURE, StopReason.TARGET_UNAVAILABLE)
+                CaptureStatus.TRUNCATED ->
+                    stopReason != StopReason.NONE &&
+                        stopReason != StopReason.MANUAL &&
+                        stopReason != StopReason.CLOCK_FAILURE &&
+                        stopReason != StopReason.TARGET_UNAVAILABLE
+            }
+        )
+        require(
+            fidelity.laterActivityUnrecorded ==
+                (status == CaptureStatus.TRUNCATED || status == CaptureStatus.FAILED)
+        )
+    }
 }
 
 internal fun validLabel(value: String): Boolean =
-  validText(value, RecordingLimits.LABEL_CHARACTERS, RecordingLimits.LABEL_BYTES)
+    validText(value, RecordingLimits.LABEL_CHARACTERS, RecordingLimits.LABEL_BYTES)
 
 internal fun validText(value: String, maxCharacters: Int, maxBytes: Int): Boolean {
-  if (value.length > maxCharacters) return false
-  var index = 0
-  var valid = true
-  while (valid && index < value.length) {
-    val character = value[index++]
-    valid =
-      if (character.isHighSurrogate()) {
-        index < value.length && value[index++].isLowSurrogate()
-      } else !character.isLowSurrogate()
-  }
-  return valid && value.toByteArray(Charsets.UTF_8).size <= maxBytes
+    if (value.length > maxCharacters) return false
+    var index = 0
+    var valid = true
+    while (valid && index < value.length) {
+        val character = value[index++]
+        valid =
+            if (character.isHighSurrogate()) {
+                index < value.length && value[index++].isLowSurrogate()
+            } else !character.isLowSurrogate()
+    }
+    return valid && value.toByteArray(Charsets.UTF_8).size <= maxBytes
 }
 
 internal fun threadLabel(value: String): String {
-  val output = StringBuilder()
-  var index = 0
-  while (index < value.length && output.length < RecordingLimits.LABEL_CHARACTERS) {
-    val character = value[index++]
-    when {
-      character.isHighSurrogate() -> {
-        if (index < value.length && value[index].isLowSurrogate()) {
-          if (output.length + 2 > RecordingLimits.LABEL_CHARACTERS) break
-          output.append(character).append(value[index++])
-        } else output.append('?')
-      }
-      character.isLowSurrogate() -> output.append('?')
-      else -> output.append(character)
+    val output = StringBuilder()
+    var index = 0
+    while (index < value.length && output.length < RecordingLimits.LABEL_CHARACTERS) {
+        val character = value[index++]
+        when {
+            character.isHighSurrogate() -> {
+                if (index < value.length && value[index].isLowSurrogate()) {
+                    if (output.length + 2 > RecordingLimits.LABEL_CHARACTERS) break
+                    output.append(character).append(value[index++])
+                } else output.append('?')
+            }
+            character.isLowSurrogate() -> output.append('?')
+            else -> output.append(character)
+        }
     }
-  }
-  return output.toString()
+    return output.toString()
 }

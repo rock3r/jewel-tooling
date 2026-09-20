@@ -11,7 +11,7 @@ SPEC.loader.exec_module(validation)
 
 class ValidationPlanTest(unittest.TestCase):
     def test_non_display_profiles_do_not_select_e2e_tests(self):
-        for profile in ("fast", "full"):
+        for profile in ("fast", "full", "package"):
             plan = validation.commands(profile)
             flattened = [argument for command in plan for argument in command]
             self.assertNotIn(":e2e:runner:test", flattened)
@@ -58,6 +58,15 @@ class ValidationPlanTest(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             validation.execute([["first"], ["second"]], runner)
         self.assertEqual(calls, [(["first"], {"cwd": validation.ROOT, "check": True})])
+
+    def test_package_is_full_without_analysis(self):
+        fast = validation.commands("fast")
+        package = validation.commands("package")
+        full = validation.commands("full")
+        self.assertEqual(full, fast + package)
+        flattened = [argument for command in package for argument in command]
+        self.assertIn(":buildPlugin", flattened)
+        self.assertNotIn("check-doc-links.py", flattened)
 
     def test_unknown_profile_is_rejected(self):
         with self.assertRaises(ValueError):

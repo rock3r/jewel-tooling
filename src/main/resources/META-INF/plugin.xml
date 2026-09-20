@@ -1,14 +1,27 @@
 <idea-plugin>
   <id>dev.sebastiano.jewel.tooling</id>
   <name>Jewel Tooling</name>
-  <vendor>Jewel Tooling</vendor>
+  <vendor url="https://jewel-ui.dev">Sebastiano Poggi</vendor>
   <description><![CDATA[
-    Static Compose stability hints for Jewel and Compose UI authors.
-    Shows parameter stability estimates and explanations in imported Gradle and Bazel projects.
-    Static hints need no application instrumentation or build plugin.
-    Run a local development configuration with bundled inspection support and view live Compose trace events.
-    Export recordings and inspect saved sessions.
+<p><b>Jewel Tooling</b> helps Compose UI authors see parameter stability in the editor and record live composition from a local run. You do not add a dependency, change application source, or start a server for the hints.</p>
+<ul>
+  <li><b>Editor hints.</b> Stability estimates appear beside <code>@Composable</code> parameters in project files and attached library sources. Hover for the reason. Use the gutter icon or <b>Inspect Compose Stability</b> to see every input in one place.</li>
+  <li><b>Live inspection.</b> <b>Run with Compose Inspection</b> starts your existing configuration with a bundled agent. The Compose Inspection tool window shows execution counts, inclusive durations, filters, and clickable duration badges in matching Kotlin files.</li>
+  <li><b>Recordings.</b> Export a session, import a saved file from the tool window or <b>Tools → Open Compose Recording</b>, and close it when you are done.</li>
+  <li><b>Coding agents.</b> <b>Tools → Compose Analysis MCP Server…</b> exposes the same static analysis to a local coding client, with an optional agent skill.</li>
+  <li><b>Customisation.</b> Toggle inlays and gutters, and change colours under <b>Settings → Editor → Color Scheme → Jewel Tooling</b>.</li>
+</ul>
+<p>Requires IntelliJ IDEA 2026.2 or newer with bundled Kotlin in K2 mode. Stability and inclusive duration are observations. They do not prove skipping, frame time, or a performance problem.</p>
   ]]></description>
+  <change-notes><![CDATA[
+<h3>0.9.0</h3>
+<ul>
+  <li>First public release.</li>
+  <li>Compose parameter stability hints in project sources and attached library sources, with hover explanations and a function summary.</li>
+  <li>Run with Compose Inspection for local live recomposition capture, duration badges, and recordings you can export or import.</li>
+  <li>Compose Analysis MCP server and optional agent skill for the same static analysis from a coding client.</li>
+</ul>
+  ]]></change-notes>
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.java</depends>
   <depends>org.jetbrains.kotlin</depends>
@@ -21,6 +34,7 @@
     <executor implementation="dev.sebastiano.jewel.tooling.ComposeInspectionExecutor"/>
     <programRunner implementation="dev.sebastiano.jewel.tooling.ComposeInspectionProgramRunner"/>
     <toolWindow id="Compose Inspection" anchor="bottom" factoryClass="dev.sebastiano.jewel.tooling.LiveInspectionToolWindowFactory" icon="/icons/compose.svg"/>
+    <notificationGroup id="JewelTooling.Live" displayType="BALLOON" bundle="messages.JewelToolingBundle" key="notification.group.live"/>
     <codeInsight.lineMarkerProvider language="kotlin" implementationClass="dev.sebastiano.jewel.tooling.StabilityLineMarkerProvider"/>
     <codeInsight.inlayProvider language="kotlin"
       implementationClass="dev.sebastiano.jewel.tooling.StabilityInlayProvider"

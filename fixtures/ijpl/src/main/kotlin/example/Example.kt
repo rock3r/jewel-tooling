@@ -16,26 +16,26 @@ import org.jetbrains.jewel.ui.component.Text
 class Greeting(val title: String)
 
 @Suppress(
-  "MagicNumber",
-  "LongParameterList",
+    "MagicNumber",
+    "LongParameterList",
 ) // Public example keeps layout spacing and compiler-evidence parameters.
 @Composable
 fun GreetingRow(
-  greeting: Greeting,
-  items: List<String>,
-  onIncrement: () -> Unit,
-  modifier: Modifier = Modifier,
-  compiledGreeting: platformevidence.Stable = platformevidence.Stable("Compiler metadata"),
-  metadata: Pair<String, String> = "Jewel" to "Compose",
+    greeting: Greeting,
+    items: List<String>,
+    onIncrement: () -> Unit,
+    modifier: Modifier = Modifier,
+    compiledGreeting: platformevidence.Stable = platformevidence.Stable("Compiler metadata"),
+    metadata: Pair<String, String> = "Jewel" to "Compose",
 ) {
-  Column(modifier) {
-    Text("${metadata.first}: ${greeting.title}")
-    Text(compiledGreeting.title)
-    Spacer(Modifier.height(16.dp))
-    Text("Items: ${items.size}", modifier = Modifier.testTag("items-count"))
-    Spacer(Modifier.height(16.dp))
-    DefaultButton(onClick = onIncrement, modifier = Modifier.testTag("add-item")) {
-      Text("Add item")
+    Column(modifier) {
+        Text("${metadata.first}: ${greeting.title}")
+        Text(compiledGreeting.title)
+        Spacer(Modifier.height(16.dp))
+        Text("Items: ${items.size}", modifier = Modifier.testTag("items-count"))
+        Spacer(Modifier.height(16.dp))
+        DefaultButton(onClick = onIncrement, modifier = Modifier.testTag("add-item")) {
+            Text("Add item")
+        }
     }
-  }
 }

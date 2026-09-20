@@ -12,51 +12,53 @@ import org.jetbrains.annotations.ApiStatus
 
 @ApiStatus.Experimental
 object RecordingFiles {
-  /**
-   * Creates a new file after serialization succeeds. Run this method on a worker thread. Failed
-   * exports can leave an incomplete file when the file system cannot confirm its identity.
-   */
-  fun writeNew(path: Path, recording: Recording, checkCanceled: () -> Unit = {}) {
-    requireTerminal(recording)
-    val bytes = RecordingCodec.write(recording, checkCanceled)
-    checkCanceled()
-    val channel = FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
-    var complete = false
-    var key: Any? = null
-    try {
-      channel.use {
-        key = fileKey(path)
+    /**
+     * Creates a new file after serialization succeeds. Run this method on a worker thread. Failed
+     * exports can leave an incomplete file when the file system cannot confirm its identity.
+     */
+    fun writeNew(path: Path, recording: Recording, checkCanceled: () -> Unit = {}) {
+        requireTerminal(recording)
+        val bytes = RecordingCodec.write(recording, checkCanceled)
         checkCanceled()
-        val buffer = ByteBuffer.wrap(bytes)
-        while (buffer.hasRemaining()) {
-          checkCanceled()
-          if (it.write(buffer) == 0) throw IOException("Output made no progress")
+        val channel =
+            FileChannel.open(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+        var complete = false
+        var key: Any? = null
+        try {
+            channel.use {
+                key = fileKey(path)
+                checkCanceled()
+                val buffer = ByteBuffer.wrap(bytes)
+                while (buffer.hasRemaining()) {
+                    checkCanceled()
+                    if (it.write(buffer) == 0) throw IOException("Output made no progress")
+                }
+                it.force(true)
+            }
+            complete = true
+        } finally {
+            if (!complete && key != null) removeIncomplete(path, key)
         }
-        it.force(true)
-      }
-      complete = true
-    } finally {
-      if (!complete && key != null) removeIncomplete(path, key)
     }
-  }
 
-  /** Reads a local file without using its contents as paths or commands. */
-  fun read(path: Path, checkCanceled: () -> Unit = {}): Recording =
-    RecordingCodec.read(Files.newInputStream(path), checkCanceled).also(::requireTerminal)
+    /** Reads a local file without using its contents as paths or commands. */
+    fun read(path: Path, checkCanceled: () -> Unit = {}): Recording =
+        RecordingCodec.read(Files.newInputStream(path), checkCanceled).also(::requireTerminal)
 
-  private fun requireTerminal(recording: Recording) {
-    if (recording.status == CaptureStatus.ACTIVE)
-      throw RecordingFormatException(RecordingError.INVALID_FORMAT)
-  }
-
-  private fun fileKey(path: Path): Any? =
-    Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).fileKey()
-
-  private fun removeIncomplete(path: Path, expectedKey: Any) {
-    try {
-      if (fileKey(path) == expectedKey) Files.deleteIfExists(path)
-    } catch (_: IOException) {
-      // The incomplete file stays on disk if cleanup fails.
+    private fun requireTerminal(recording: Recording) {
+        if (recording.status == CaptureStatus.ACTIVE)
+            throw RecordingFormatException(RecordingError.INVALID_FORMAT)
     }
-  }
+
+    private fun fileKey(path: Path): Any? =
+        Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+            .fileKey()
+
+    private fun removeIncomplete(path: Path, expectedKey: Any) {
+        try {
+            if (fileKey(path) == expectedKey) Files.deleteIfExists(path)
+        } catch (_: IOException) {
+            // The incomplete file stays on disk if cleanup fails.
+        }
+    }
 }

@@ -8,7 +8,8 @@ The pinned wrapper provisions compilation toolchains. Windows uses `gradlew.bat`
 | Command | Work | Prerequisites |
 | --- | --- | --- |
 | `python3 scripts/validate.py fast` | Formatting, ordinary Detekt, Compose rules, build scripts, Python contracts and links | Dependency access; no display |
-| `python3 scripts/validate.py full` | Fast checks, typed Detekt, plugin/library tests, ZIP, plugin verifier, package and image gates | IDE downloads and build toolchains; no display |
+| `python3 scripts/validate.py package` | Typed Detekt, plugin/library tests, ZIP, plugin verifier, package and image gates | IDE downloads and build toolchains; no display |
+| `python3 scripts/validate.py full` | Fast checks plus the package profile | IDE downloads and build toolchains; no display |
 | `python3 scripts/validate.py e2e` | SDK export, real Bazel model, standalone interaction, six maintained IDE scenarios | Bazelisk and a graphical session |
 
 The fast profile runs static checks, not JVM tests. The full profile can take substantially longer because it runs Plugin Verifier.
@@ -41,10 +42,20 @@ See [static analysis](static-analysis.md) for source coverage and typed-check li
 | Plugin and agent bytecode | JVM 21 |
 | Premain and bridge bytecode | Java 8 guard and bridge; this does not make the agent work on Java 8 |
 | IDE Starter and standalone test workers | JDK 25 |
-| Binary metadata reader | Java 8–25 nonpreview classes; accepted metadata listed in the user guide |
+| Binary metadata reader | Java 8–25 nonpreview classes; Kotlin metadata `[2, 3, 0]` and `[2, 4, 0]` |
 | Compiler matrix | 2.3.20/JVM 25, 2.4.20-RC3/JVM 25, and 2.4.0/JVM 21 |
 
-The [user guide](user-guide.md#read-compiler-evidence) explains what the matrix proves.
+The tests compile real dependencies with these configurations:
+
+| Kotlin and Compose compiler | JVM target | Purpose |
+| --- | --- | --- |
+| 2.3.20 | 25 | Jewel Standalone compiler configuration |
+| 2.4.20-RC3 | 25 | IntelliJ Platform compiler configuration |
+| 2.4.0 | 21 | Previous supported configuration |
+
+These versions describe the compiled dependencies, not the IDE runtime. Running on JBR 25 does not require every dependency to target Java 25. The plugin keeps its Java 21 bytecode target. Source analysis does not depend on the binary metadata reader. A metadata version does not identify the compiler patch version. Computed stability initializers and other unsupported shapes stay unknown.
+
+The [editor guide](../user-guide/editor.md#compiler-evidence) explains what those class results mean for authors.
 Compile and test a new baseline before changing compatibility claims.
 `:verifyPlugin` checks the current configured IDE. It does not prove dynamic unload, every newer IDE, or Android Studio support.
 
@@ -76,7 +87,7 @@ python3 scripts/verify-artifacts.py --images
 ```
 
 The script creates one capture ID, snapshots source inputs, runs the fixtures, and promotes only matching successful captures.
-Keep all thirteen images and `docs/images/manifest.json` together. Never upscale a 1x image or edit the manifest to bless stale captures.
+Keep all thirteen images and `user-guide/images/manifest.json` together. Never upscale a 1x image or edit the manifest to bless stale captures.
 A changed input requires a fresh capture. Include the new images and manifest with the input change. Linux Xvfb evidence does not replace Retina assets.
 See the [capture skill](../.agents/skills/spectre-evidence/SKILL.md) for failure handling.
 
@@ -88,7 +99,7 @@ The package mutation tests reject test-only classes, unwanted dependencies, and 
 If old ZIPs exist, inspect them and move only obsolete generated distributions out of that directory.
 Do not change allowlists merely to accept unexpected contents.
 
-A local ZIP is not a release. Do not push tags or run publication commands without user approval.
+A local ZIP is unsigned unless Marketplace signing environment variables are set. It is not a release. Do not push tags or run publication commands without user approval.
 
 ## Static MCP
 

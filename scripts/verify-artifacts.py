@@ -111,7 +111,8 @@ def verify_mcp_jar(data, bootstrap=False):
 
 def verify_recording_jar(data):
     prefix = "dev/sebastiano/jewel/tooling/recording/"
-    classes = {"CaptureFidelity", "CaptureStatus", "CaptureTarget", "CompositionRecorder", "MutableSummary",
+    classes = {"CaptureFidelity", "CaptureStatus", "CaptureTarget", "CompositionRecorder", "EventSpill",
+               "MutableSiteSummary",
                "Recording", "RecordingCodec", "RecordingError", "RecordingFiles", "RecordingFormatException",
                "InspectionFiles", "LiveTargetStatus", "LiveRuntimeState", "LiveCommandRejectedException", "LiveEndpoint", "LiveConnection", "LiveCommand", "LiveWire", "LiveRecordingServer", "LiveRecordingSession",
                "RecordingKt", "RecordingLimits", "SiteSummary", "SiteSummaryKt", "StopReason", "TraceEvent",
@@ -161,7 +162,7 @@ def capture_inputs(root):
 
 
 def verify_images(root):
-    manifest = json.loads((root / "docs/images/manifest.json").read_text())
+    manifest = json.loads((root / "user-guide/images/manifest.json").read_text())
     if manifest["schemaVersion"] != 1:
         raise ValueError("Unsupported screenshot manifest version")
     if manifest["inputs"] != capture_inputs(root):
@@ -173,8 +174,8 @@ def verify_images(root):
         raise ValueError("Missing or unexpected documentation scenario")
     for entry in manifest["images"]:
         relative = Path(entry["path"])
-        if relative.is_absolute() or ".." in relative.parts or relative.parts[:2] != ("docs", "images"):
-            raise ValueError("Image must be inside docs/images")
+        if relative.is_absolute() or ".." in relative.parts or relative.parts[:2] != ("user-guide", "images"):
+            raise ValueError("Image must be inside user-guide/images")
         data = (root / relative).read_bytes()
         if data[:8] != b"\x89PNG\r\n\x1a\n":
             raise ValueError("Expected a PNG screenshot")

@@ -32,5 +32,5 @@ For a new IDE baseline, compile and test that exact IDE and bundled Kotlin plugi
 The absence of an upper build limit is not test evidence.
 
 Hand off `build/distributions/jewel-tooling-<pluginVersion>.zip` and its `.sha256` file only after verifying their current version.
-State the checks run and limits. A ZIP is unsigned and local; this workflow never publishes, pushes, tags, or creates a release.
+State the checks run and limits. A ZIP is unsigned unless Marketplace credentials are in the environment; this workflow never publishes, pushes, tags, or creates a release.
 Public publication waits for explicit approval and the user's plugin test.

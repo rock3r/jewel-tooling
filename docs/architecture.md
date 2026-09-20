@@ -1,6 +1,6 @@
 # Architecture
 
-The [user guide](user-guide.md) is authoritative for supported behavior and limits.
+The [user guide](../user-guide/README.md) is authoritative for supported behaviour and limits.
 This map describes implemented code. Local proposals in `.plans/` do not extend this contract.
 
 | Module | Responsibility | Boundary |
@@ -36,14 +36,14 @@ Neither an unstable hint nor an execution count proves a performance defect.
 ## Runtime and lifecycle
 
 The IDE registers a Compose Inspection executor beside Run and Debug. That executor installs bundled support and launches a temporary copy of a supported local run configuration.
-The startup agent observes Compose callbacks in the target JVM and sends bounded data over authenticated loopback transport.
+The startup agent observes Compose callbacks in the target JVM. Completed events are paired off the composition thread and spilled to a local file. Live snapshots drain that writer without dropping in-flight pairs, then send per-site totals over authenticated loopback; the full event list is read when capture stops.
 The IDE does not inject Compose or its own Kotlin runtime into the target's application classloader.
 Keep the bridge JDK-only. Keep agent libraries private. Check packaged contents after dependency changes.
 
-Current capture observes EDT callbacks and rejects unsupported or multiple runtime copies.
+Current capture records Compose callbacks on the composition thread and rejects unsupported or multiple runtime copies.
 It does not identify skipped calls, invalidation causes, argument values, or composition instances.
-The live view can annotate matching Kotlin files in the editor from compiler file names in the recording. Details file names open when that file resolves in the project or its dependencies.
-See the [live inspection guide](user-guide.md#run-your-project-with-live-inspection) for launch types and capture semantics.
+The live view can annotate matching Kotlin files in the editor, including dependency sources, from compiler file names in the recording. Details file names open when that file resolves in the project or its dependencies.
+See the [live inspection guide](../user-guide/live-inspection.md) for launch types and capture semantics.
 
 Cancel owned work, close sockets, and release listeners on disconnect, project disposal, and plugin unload.
 Cleanup must not wait for nonmodal EDT work while a modal unload waits for cancellation.
@@ -51,7 +51,7 @@ Keep UI completion cancellable. Bound necessary resource cleanup and keep blocki
 
 ## Compatibility and fixtures
 
-The [compiler matrix](user-guide.md#read-compiler-evidence) lists the accepted metadata and tested compiler configurations.
+The [compiler matrix](testing.md#compatibility) lists the accepted metadata and tested compiler configurations.
 The [testing guide](testing.md#compatibility) distinguishes IDE, build, bytecode, and target runtime versions.
 A missing upper IDE build limit permits installation; it does not prove compatibility with every future IDE.
 

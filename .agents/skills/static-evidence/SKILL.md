@@ -7,7 +7,7 @@ description: Validate Jewel Tooling source inference and compiler stability meta
 
 Use when changing source inference, evidence classification, or the binary metadata reader.
 Require JDK 25, Python 3.10+, dependency access, and the configured IDE baseline. Run from the repository root.
-Read [architecture](../../../docs/architecture.md#static-evidence) and the [compiler matrix](../../../docs/user-guide.md#read-compiler-evidence).
+Read [architecture](../../../docs/architecture.md#static-evidence) and the [compiler matrix](../../../docs/testing.md#compatibility).
 
 ```sh
 ./gradlew :test --tests '*StabilityAnalysisTest'

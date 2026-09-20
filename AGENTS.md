@@ -1,7 +1,7 @@
 # Jewel Tooling
 
 Jewel Tooling adds Compose stability hints and local live inspection to IntelliJ IDEA.
-Read the [user guide](docs/user-guide.md) for implemented behavior and limits.
+Read the [user guide](user-guide/README.md) for implemented behaviour and limits.
 Keep proposals in the ignored `.plans/` directory. A proposal is not a supported feature.
 
 ## Start here
@@ -25,7 +25,7 @@ The user must test the plugin before public publication.
 | Recording model and transport | `recording/` | [Local ZIP and lifecycle](.agents/skills/local-plugin/SKILL.md) |
 | Optional target adapter | `recording-compose/` | [Detekt repair](.agents/skills/detekt-repair/SKILL.md) |
 | Startup agent, loader, bridge | `agent/`, `agent-premain/`, `agent-bridge/` | [Local ZIP and lifecycle](.agents/skills/local-plugin/SKILL.md) |
-| Static MCP transport and bootstrap | `mcp-runtime/`, `mcp-bootstrap/` | [MCP setup](docs/agents/mcp.md), [local ZIP and lifecycle](.agents/skills/local-plugin/SKILL.md) |
+| Static MCP transport and bootstrap | `mcp-runtime/`, `mcp-bootstrap/` | [MCP setup](user-guide/agents/mcp.md), [local ZIP and lifecycle](.agents/skills/local-plugin/SKILL.md) |
 | Real compiler output | `test-fixtures/compiler-metadata/` | [Static evidence](.agents/skills/static-evidence/SKILL.md) |
 | Gradle and Bazel targets, IDE driver | `fixtures/`, `e2e/` | [Spectre and Retina](.agents/skills/spectre-evidence/SKILL.md) |
 
@@ -38,7 +38,7 @@ The user must test the plugin before public publication.
 - Own jobs and listeners with disposable scopes. Never make plugin unload wait for nonmodal EDT cleanup.
 - Keep IDE and target dependencies separate. Never package the test driver, Spectre, or Compose runtime in the plugin.
 - Use localized strings, theme-aware IDE UI, and editor scheme colours. Preserve keyboard and screen-reader access.
-- Keep two-space ktfmt Google style. Do not add formatter overlap, baselines, or blanket suppressions.
+- Keep ktfmt kotlinLangStyle. Do not add formatter overlap, baselines, or blanket suppressions.
 
 ## Validate
 
