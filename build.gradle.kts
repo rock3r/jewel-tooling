@@ -190,7 +190,7 @@ tasks.processResources {
 
 val composeRules by configurations.creating
 
-dependencies { composeRules("io.nlopez.compose.rules:detekt:0.6.0") }
+dependencies { composeRules("io.nlopez.compose.rules:detekt:0.6.6") }
 
 tasks.register<Detekt>("detektComposeFixtures") {
     description = "Check Compose fixtures and the target adapter with Compose rules."
