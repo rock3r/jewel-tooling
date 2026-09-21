@@ -136,6 +136,12 @@ jobs:
           repository-cache: true
           cache-save: ${{ github.event_name != 'pull_request' }}
       - name: Real standalone and IJPL workflows with Spectre
+        env:
+          # Hosted Linux has no GPU. Spectre's waitForVisualIdle samples window
+          # pixels; Skiko's default OpenGL path leaves those samples unsampleable
+          # under Xvfb and kills the live Compose target after 5s.
+          SKIKO_RENDER_API: SOFTWARE_COMPAT
+          JAVA_TOOL_OPTIONS: -Dskiko.renderApi=SOFTWARE_COMPAT
         run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' python3 scripts/validate.py e2e
       - name: E2E evidence
         if: always()

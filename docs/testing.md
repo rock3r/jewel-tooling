@@ -16,7 +16,7 @@ The fast profile runs static checks, not JVM tests. The full profile can take su
 
 Add `--dry-run` to print the exact command plan as JSON without running tools.
 Each profile stops at its first failure. Inspect reports before running later stages separately for diagnosis.
-CI calls these same entry points. On Linux, wrap `e2e` in `xvfb-run` as CI does.
+CI calls these same entry points. On Linux, wrap `e2e` in `xvfb-run` as CI does, and set `SKIKO_RENDER_API=SOFTWARE_COMPAT` plus `-Dskiko.renderApi=SOFTWARE_COMPAT` so Compose can paint without a GPU.
 Do not use unqualified `test` from the root: it also selects display-dependent subproject tests.
 
 ## Targeted checks

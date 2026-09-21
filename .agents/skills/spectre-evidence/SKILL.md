@@ -7,7 +7,7 @@ description: Run maintained standalone and IJPL Spectre workflows, or capture an
 
 Use for rendered editor hints, live controls, target launch, unload, or documentation screenshots.
 Require JDK 25, Python 3.10+, Bazelisk, network access for uncached dependencies, and a graphical session.
-Run from the repository root. On Linux, use the Xvfb command in `.github/workflows/ci.yml`.
+Run from the repository root. On Linux, use the Xvfb command and Skiko `SOFTWARE_COMPAT` env from `.github/workflows/ci.yml`.
 
 ```sh
 python3 scripts/validate.py e2e
