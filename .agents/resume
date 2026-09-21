@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Confirm the jewel-tooling toolchain is still on PATH after orb wake.
+set -euo pipefail
+command -v java >/dev/null
+command -v javac >/dev/null
+command -v bazelisk >/dev/null
+command -v xvfb-run >/dev/null
+java -version >/dev/null

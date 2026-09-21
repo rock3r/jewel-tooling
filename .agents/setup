@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Install JDK 25 (JBRSDK), Bazelisk, and Linux display packages for jewel-tooling.
+set -euo pipefail
+
+JBR_VERSION="25.0.4.1"
+JBR_BUILD="b583.48"
+JBR_NAME="jbrsdk-${JBR_VERSION}-linux-x64-${JBR_BUILD}"
+JBR_URL="https://cache-redirector.jetbrains.com/intellij-jbr/${JBR_NAME}.tar.gz"
+JBR_HOME="${HOME}/.local/jvm/${JBR_NAME}"
+BAZELISK_VERSION="1.27.0"
+PACKAGES=(
+  xvfb
+  x11-utils
+  libasound2
+  libxi6
+  libxtst6
+  libxrender1
+  fonts-dejavu
+  gstreamer1.0-tools
+  gstreamer1.0-plugins-base
+  gstreamer1.0-plugins-good
+)
+
+log() { printf '[setup] %s\n' "$*"; }
+have_pkg() { dpkg -s "$1" >/dev/null 2>&1; }
+
+start=$(date +%s)
+log "jewel-tooling orb setup"
+
+missing=()
+for pkg in "${PACKAGES[@]}"; do
+  have_pkg "$pkg" || missing+=("$pkg")
+done
+if ((${#missing[@]})); then
+  log "apt-get install ${missing[*]}"
+  sudo apt-get update -qq
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing[@]}"
+else
+  log "display packages already installed"
+fi
+
+if [[ ! -x "${JBR_HOME}/bin/java" || ! -x "${JBR_HOME}/bin/javac" ]]; then
+  log "install ${JBR_NAME}"
+  mkdir -p "${HOME}/.local/jvm" /tmp/jbr-setup
+  archive="/tmp/jbr-setup/${JBR_NAME}.tar.gz"
+  if [[ ! -s "${archive}" ]]; then
+    curl -fsSL --retry 3 -o "${archive}" "${JBR_URL}"
+  fi
+  tar -xzf "${archive}" -C "${HOME}/.local/jvm"
+else
+  log "JBR already installed at ${JBR_HOME}"
+fi
+"${JBR_HOME}/bin/java" -version
+"${JBR_HOME}/bin/javac" -version >/dev/null
+
+if ! command -v bazelisk >/dev/null 2>&1; then
+  log "install bazelisk ${BAZELISK_VERSION}"
+  curl -fsSL --retry 3 -o /tmp/bazelisk \
+    "https://github.com/bazelbuild/bazelisk/releases/download/v${BAZELISK_VERSION}/bazelisk-linux-amd64"
+  chmod +x /tmp/bazelisk
+  sudo mv /tmp/bazelisk /usr/local/bin/bazelisk
+  sudo ln -sfn /usr/local/bin/bazelisk /usr/local/bin/bazel
+else
+  log "bazelisk already on PATH"
+fi
+
+profile="${HOME}/.bash_profile"
+marker="# JBR 25 (jewel-tooling orb)"
+if ! grep -Fqx "${marker}" "${profile}" 2>/dev/null; then
+  log "persist JAVA_HOME in ${profile}"
+  cat >> "${profile}" <<EOF
+
+${marker}
+export JAVA_HOME=${JBR_HOME}
+export PATH="\$JAVA_HOME/bin:\$PATH"
+EOF
+fi
+
+log "done in $(($(date +%s) - start))s"
