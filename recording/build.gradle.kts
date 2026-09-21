@@ -17,7 +17,7 @@ dependencies {
     compileOnly(kotlin("stdlib"))
     testImplementation(kotlin("stdlib"))
     compileOnly("com.fasterxml.jackson.core:jackson-core:2.19.0")
-    compileOnly("org.jetbrains:annotations:26.0.2")
+    compileOnly("org.jetbrains:annotations:26.1.0")
     testImplementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
     testImplementation("junit:junit:${libs.versions.junit4.get()}")
 }

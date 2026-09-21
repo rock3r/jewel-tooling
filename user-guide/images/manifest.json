@@ -171,7 +171,7 @@
     "test-fixtures/compiler-metadata/build.gradle.kts",
     "test-fixtures/compiler-metadata/src/main/kotlin/evidence/Models.kt"
   ],
-  "sourceSha256": "b79ba5c432108e15b1ffbf3eac567cda407dcc0efc8e1cb0ffab4aac45b9c2cc",
+  "sourceSha256": "36e0872621056aa171c1a9d756abb248d490c99a179c11fa1fe2ddc43248b9b0",
   "images": [
     {
       "scenario": "mcp-standalone",
