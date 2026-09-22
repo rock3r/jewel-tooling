@@ -94,7 +94,9 @@ def verify_mcp_jar(data, bootstrap=False):
                 continue
             prefixes = (own + "runtime/", "kotlin/", "kotlinx/", "io/ktor/", "io/modelcontextprotocol/",
                         "io/github/oshai/", "org/slf4j/", "com/typesafe/config/",
-                        "org/jetbrains/annotations/", "org/intellij/lang/annotations/", "_COROUTINE/")
+                        "org/jetbrains/annotations/", "org/intellij/lang/annotations/",
+                        "com/charleskorn/kaml/", "it/krzeminski/snakeyaml/engine/kmp/",
+                        "okio/", "net/thauvin/erik/urlencoder/", "_COROUTINE/")
             metadata = (
                 name in {"DebugProbesKt.bin", "META-INF/LICENSE.txt"}
                 or name.startswith(("META-INF/licenses/", "META-INF/services/", "META-INF/proguard/",

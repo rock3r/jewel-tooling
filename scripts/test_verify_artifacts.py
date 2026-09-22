@@ -82,6 +82,10 @@ class DistributionTest(unittest.TestCase):
                 verify.verify_mcp_jar(self.mcp_jar(extra=entry))
         with self.assertRaises(ValueError):
             verify.verify_mcp_jar(self.mcp_jar(bootstrap=True, extra="kotlin/Unit.class"), bootstrap=True)
+        verify.verify_mcp_jar(self.mcp_jar(extra="com/charleskorn/kaml/AmbiguousQuoteStyle.class"))
+        verify.verify_mcp_jar(self.mcp_jar(extra="it/krzeminski/snakeyaml/engine/kmp/api/Load.class"))
+        verify.verify_mcp_jar(self.mcp_jar(extra="okio/Buffer.class"))
+        verify.verify_mcp_jar(self.mcp_jar(extra="net/thauvin/erik/urlencoder/UrlEncoderUtil.class"))
 
     def verify_bytes(self, contents):
         with tempfile.TemporaryDirectory() as directory:
