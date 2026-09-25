@@ -15,6 +15,8 @@ Inspect `git status --short` before and after work. Keep unrelated edits intact.
 
 `AGENTS.md` is the canonical instruction file. Each workflow under `.agents/skills/` is the maintained skill for that task. Edit only those files. No hook or global permission configuration is required.
 
+The exception is `.agents/skills/babysit-pr/`. It is vendored from [rock3r/babysit-pr-skill](https://github.com/rock3r/babysit-pr-skill) at the tag in its `VERSION` file. Do not edit it in place. Update it with that repository's `sync.py`, and keep this project's settings in its `config.json`.
+
 The validation runner uses `gradlew.bat` on Windows. Headed Windows E2E and capture are not yet validated. Use `python` if your Python 3 installation does not provide `python3`.
 
 ## Code style

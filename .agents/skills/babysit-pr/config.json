@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "local_gate": "python3 scripts/validate.py full"
+}
