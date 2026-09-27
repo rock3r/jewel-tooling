@@ -16,9 +16,9 @@ kotlin { jvmToolchain(21) }
 dependencies {
     compileOnly(kotlin("stdlib"))
     testImplementation(kotlin("stdlib"))
-    compileOnly("com.fasterxml.jackson.core:jackson-core:2.19.0")
+    compileOnly("com.fasterxml.jackson.core:jackson-core:2.22.3")
     compileOnly("org.jetbrains:annotations:26.1.0")
-    testImplementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
+    testImplementation("com.fasterxml.jackson.core:jackson-core:2.22.3")
     testImplementation("junit:junit:${libs.versions.junit4.get()}")
 }
 
