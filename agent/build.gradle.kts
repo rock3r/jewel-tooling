@@ -15,7 +15,7 @@ kotlin { jvmToolchain(21) }
 dependencies {
     implementation(project(":recording"))
     implementation(kotlin("stdlib"))
-    implementation("com.fasterxml.jackson.core:jackson-core:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-core:2.22.3")
     implementation("org.ow2.asm:asm:9.10.1")
     implementation("org.ow2.asm:asm-tree:9.10.1")
     compileOnly(project(":agent-bridge"))
