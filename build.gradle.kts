@@ -73,7 +73,7 @@ val schemaValidator by configurations.creating {
     isCanBeResolved = true
 }
 
-dependencies { schemaValidator("com.networknt:json-schema-validator:1.5.9") }
+dependencies { schemaValidator("com.networknt:json-schema-validator:3.0.7") }
 
 val compilerFixtures by configurations.creating {
     isCanBeConsumed = false
