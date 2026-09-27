@@ -18,7 +18,7 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:3.6.0")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.0")
     implementation("io.ktor:ktor-client-cio:3.6.0")
-    runtimeOnly("org.slf4j:slf4j-nop:2.0.17")
+    runtimeOnly("org.slf4j:slf4j-nop:2.0.20")
     testImplementation("junit:junit:${libs.versions.junit4.get()}")
     testImplementation(project(":mcp-bootstrap"))
 }
