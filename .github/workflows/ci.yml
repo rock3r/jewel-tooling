@@ -30,7 +30,7 @@ jobs:
         run: python3 scripts/validate.py fast
       - name: Analysis reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: analysis-reports
           path: |
@@ -58,7 +58,7 @@ jobs:
       - name: Tests, plugin ZIP, and screenshot provenance
         run: python3 scripts/validate.py package
       - name: Production distribution
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: production-plugin
           path: |
@@ -67,7 +67,7 @@ jobs:
           if-no-files-found: error
       - name: Diagnostic reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: plugin-reports
           path: |
@@ -102,7 +102,7 @@ jobs:
         run: ./gradlew :koverHtmlReport :koverXmlReport
       - name: Coverage reports
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-reports
           path: |
@@ -145,7 +145,7 @@ jobs:
         run: xvfb-run --auto-servernum --server-args='-screen 0 1920x1080x24' python3 scripts/validate.py e2e
       - name: E2E evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-evidence
           path: |
