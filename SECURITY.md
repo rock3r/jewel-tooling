@@ -15,7 +15,7 @@ Only the latest published plugin version receives security fixes.
 
 Report a suspected vulnerability privately. Do not file a public GitHub issue.
 
-Once [rock3r/jewel-tooling](https://github.com/rock3r/jewel-tooling) is public, use GitHub's private vulnerability reporting flow. Until then, contact the maintainer through [jewel-ui.dev](https://jewel-ui.dev).
+Use [GitHub's private vulnerability reporting flow](https://github.com/rock3r/jewel-tooling/security/advisories/new).
 
 Do not post credentials, proprietary source, connection tokens, or sensitive IDE logs in a public issue. Include the plugin version, IDE build, steps to reproduce, and expected impact.
 

@@ -9,16 +9,6 @@ You do not add a dependency, change application source, or start a server for th
 
 This is the 0.9.0 distribution for IntelliJ IDEA 2026.2. Install it from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling), from a [GitHub Release](https://github.com/rock3r/jewel-tooling/releases), or from the ZIP built in this repository.
 
-GitHub README pages cannot run the Marketplace install widget. On jewel-ui.dev or another HTML page, use:
-
-```html
-<div id="jewel-tooling-install"></div>
-<script src="https://plugins.jetbrains.com/assets/scripts/mp-widget.js"></script>
-<script>
-  MarketplaceWidget.setupMarketplaceWidget('install', 34392, "#jewel-tooling-install");
-</script>
-```
-
 ## What it looks like
 
 ![Compose parameter stability hints](user-guide/images/standalone-editor.png)
@@ -29,19 +19,29 @@ Hints appear after parameter types in project files and in attached dependency K
 
 **Run with Compose Inspection** connects to your selected configuration and fills the **Live recompositions** tab as you use the UI. Inclusive duration badges appear at the end of matching function or property lines. Those times include nested calls and capture overhead. They are not frame times, and they do not prove a skip.
 
-## Try it
+## Install
 
-Build with JDK 25, then install `build/distributions/jewel-tooling-0.9.0.zip` from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling) or through **Settings → Plugins → gear → Install Plugin from Disk**.
+In IntelliJ IDEA, open **Settings → Plugins → Marketplace**, search for **Jewel Tooling**, and click **Install**.
+
+To install a [GitHub Release](https://github.com/rock3r/jewel-tooling/releases) ZIP, use **Settings → Plugins → gear → Install Plugin from Disk**.
+
+### Build from source
+
+Use JDK 25 to build the plugin ZIP:
 
 ```sh
 ./gradlew :buildPlugin
 ```
+
+Install `build/distributions/jewel-tooling-0.9.0.zip` through **Install Plugin from Disk**.
 
 To use an existing compatible IDE distribution instead of downloading one:
 
 ```sh
 ./gradlew -PlocalIdePath=/path/to/IntelliJIDEA.app/Contents :buildPlugin
 ```
+
+## Use the plugin
 
 Open a project, allow indexing to finish, then open a Kotlin file with `@Composable` functions. Toggle inline hints under **Settings → Editor → Inlay Hints → Kotlin → Compose parameter stability**. Change colours under **Settings → Editor → Color Scheme → Jewel Tooling**.
 

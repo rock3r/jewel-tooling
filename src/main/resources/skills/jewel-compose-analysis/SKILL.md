@@ -28,7 +28,7 @@ Pi support uses pi-mcp-adapter, which can expose tools through its `mcp` proxy. 
 - `UNSUPPORTED`: the available evidence cannot support a conclusion.
 
 Keep mixed evidence and unknown results visible. Do not describe source inference as compiler confirmation.
-Do not add `@Stable` or `@Immutable` merely to silence a finding.
+Do not add `@Stable` or `@Immutable` solely to change the reported classification.
 Stability alone does not prove skippability or a performance defect. These MCP tools do not provide live inspection data.
 
 ## Handle stale or unavailable results
