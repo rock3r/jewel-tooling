@@ -44,7 +44,7 @@ The counts cover value parameters and any extension receiver. Analysis excludes 
 
 Jewel Tooling reads existing Compose stability metadata from resolved binary dependency classes. Reading never loads or executes the class. The inspected project needs no extra plugin or dependency.
 
-The metadata reader supports Kotlin versions `[2, 3, 0]` and `[2, 4, 0]` in nonpreview Java 8–25 class files. It rejects preview classes. See the [testing guide](../docs/testing.md#compatibility) for the compiler configurations used to generate test fixtures.
+The reader supports Kotlin metadata versions `[2, 3, 0]` and `[2, 4, 0]` in nonpreview Java 8–25 class files. It rejects preview classes. See the [testing guide](../docs/testing.md#compatibility) for the compiler configurations used to generate test fixtures.
 
 Metadata versions cannot identify a compiler patch version. The reader returns **unknown** for computed stability initializers and other unsupported shapes. Other metadata versions and classes newer than Java 25 also produce **unknown**. Support for these formats does not cover all published Jewel or Compose libraries.
 
