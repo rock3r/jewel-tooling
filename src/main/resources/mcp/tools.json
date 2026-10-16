@@ -632,7 +632,7 @@
   },
   {
     "name": "jewel_analyze",
-    "description": "Analyze parameter stability in one Kotlin file. Optionally select a range or declarationId. Stability does not prove skipping or a performance problem.",
+    "description": "Analyze parameter stability in one Kotlin file, optional range or declarationId. Stability does not prove skipping or a performance problem.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1147,7 +1147,7 @@
   },
   {
     "name": "jewel_explain",
-    "description": "Explain a parameter and its resolved type using existing engine evidence. Do not add Stable or Immutable solely to change the reported classification.",
+    "description": "Explain a parameter and its resolved type using existing engine evidence. Do not add Stable or Immutable merely to silence a finding.",
     "inputSchema": {
       "type": "object",
       "properties": {
