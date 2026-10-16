@@ -1,8 +1,8 @@
 # Agent skill
 
-The optional **Agent skill** section in **Tools → Compose Analysis MCP Server…** installs `jewel-compose-analysis` for the selected client. It teaches the agent how to use the four analysis tools and interpret their evidence. The skill has its own version, separate from the plugin version.
+Install `jewel-compose-analysis` through **Tools → Compose Analysis MCP Server… → Agent skill**. This optional skill explains the four analysis tools and their evidence to the selected coding client. The skill and plugin have separate versions.
 
-You can install the skill while the MCP server is disabled. Enable the server before using its tools. Installing the skill does not install an MCP connection or change approval settings.
+Skill installation works with the MCP server disabled. Tool calls require an enabled server. Installing the skill leaves MCP connections and approval settings unchanged.
 
 1. Check the **Skill file** path. You can select a custom client profile or discovery directory.
 2. Select **Check skill** after changing the path.
@@ -19,13 +19,13 @@ You can install the skill while the MCP server is disabled. Enable the server be
 | OpenCode | `$XDG_CONFIG_HOME/opencode/skills/jewel-compose-analysis/`, or `~/.config/opencode/skills/jewel-compose-analysis/` |
 | GitHub Copilot | `~/.copilot/skills/jewel-compose-analysis/` for CLI, VS Code, and JetBrains |
 
-These are user-level paths. Some clients also discover other clients' skill directories. Codex's skill path is independent of `CODEX_HOME`. OpenCode's skill path is independent of the `OPENCODE_CONFIG` file override. For older Antigravity installations, select the client's supported skill directory, such as `~/.gemini/antigravity/skills/`. Use a direct directory when your configuration uses symbolic links.
+The defaults install skills for the current user. Clients can also discover skills in other clients' directories. `CODEX_HOME` does not affect Codex's skill path. `OPENCODE_CONFIG` does not affect OpenCode's skill path. Older Antigravity installations may need a directory such as `~/.gemini/antigravity/skills/`. If your configuration uses symbolic links, select the direct directory.
 
-When a plugin update bundles a newer skill, **Check skill** offers **Update skill**. The dialog also checks when you select a client. Updates require your click; nothing updates silently. A newer installed version is preserved. Locally edited or foreign skills are never overwritten. To recover a conflict, move the skill folder aside to preserve your work, then install again. An identical unmanaged copy remains unmanaged and cannot receive automatic replacement.
+When the plugin bundles a newer skill, **Check skill** offers **Update skill**. Selecting a client also checks its skill. Every update needs your confirmation. The installer preserves newer installed versions and refuses to overwrite edited or foreign skills. For conflicts, move the existing folder aside before reinstalling. Identical unmanaged copies stay unmanaged and ineligible for automatic replacement.
 
-If setup was interrupted, select **Resume skill setup** to reconcile its saved state. The installer keeps one previous file per destination in its private IDE support directory. The skill directory also contains a hidden ownership record and lock file. Keep them with the skill. A changed destination is checked again before writing. Another application's concurrent writes can still prevent installation.
+After interrupted setup, choose **Resume skill setup** to reconcile saved state. The private IDE support directory keeps one previous file per destination. Keep the hidden ownership record and lock file in the skill directory. Before writing, the installer rechecks changed destinations. Concurrent writes by another application can still block installation.
 
-The directory defaults follow the client documentation:
+The default directories follow these client references:
 [Android Studio](https://developer.android.com/studio/gemini/skills),
 [Antigravity](https://antigravity.google/docs/migration/workflows-to-skills),
 [Codex](https://learn.chatgpt.com/docs/build-skills),

@@ -1,8 +1,8 @@
 # Editor hints
 
-Jewel Tooling shows a static stability estimate beside each parameter of a Kotlin `@Composable` function. Hover a hint to see its reason. Click the function’s gutter indicator to inspect every input.
+The editor estimates stability for each parameter of a Kotlin `@Composable` function. Hover over a parameter hint to read the reason. To inspect all inputs, click the function's gutter indicator.
 
-These are conservative estimates, not Compose compiler reports. A stability result does not say whether a function will recompose. With strong skipping, an unstable parameter can still permit skipping when its relevant identity has not changed.
+Jewel Tooling uses conservative static estimates. It does not produce Compose compiler reports or predict recomposition. Strong skipping can skip a function with an unstable parameter when the relevant identity stays unchanged.
 
 ![A compact stability hint showing the inferred reason](images/explanation.png)
 
@@ -14,56 +14,56 @@ These are conservative estimates, not Compose compiler reports. A stability resu
 | unstable | A standard collection or array, a vararg, a class with a mutable or unstable stored property, or a supported compiler metadata result that proves instability. |
 | unknown | The type is unresolved, outside the supported inference rules, or too expensive to analyse within the fixed budget. |
 
-The explanation tells you which rule produced the estimate. `@Stable` and `@Immutable` are contracts: the plugin trusts them and does not prove that their promises are valid. Do not add either annotation only to change a hint.
+Each explanation names the rule behind the estimate. The plugin trusts `@Stable` and `@Immutable` contracts without checking whether the implementation keeps their promises. Add these annotations only when the implementation meets their contracts.
 
-Each hint has a small circle and a text label. Green means stable, muted red means unstable, and blue-grey means unknown.
+Hints combine a small circle with a text label. The circle is green for stable, muted red for unstable, and blue-grey for unknown.
 
-A plain circle means that the result uses inference, a built-in rule, or a declared contract. A circle with a 1-point border means that supported compiler metadata confirms the type's stability. Mixed evidence stays borderless. For example, a source class does not gain a border because one property has compiler metadata. The border does not say whether a composable can be skipped.
+Circles without a border identify inference, built-in rules, or declared contracts. A 1-point border identifies stability confirmed by supported compiler metadata. Mixed evidence has no border. A source class therefore stays borderless when only one property has compiler metadata. The border gives no information about composable skipping.
 
-The text uses the IDE's standard inlay text colour. Unknown results currently stay borderless. To change colours, see [Customisation](customisation.md).
+The IDE's standard inlay text colour applies to hint labels. Unknown results have no border. See [Customisation](customisation.md) to change the colours.
 
 ## Inspect a function
 
-Click the gutter indicator beside a composable function to open **Compose stability**. The popup shows the function name, status counts, and each input’s source type, explanation, and evidence. Evidence labels distinguish built-in rules, declared contracts, source inference, and compiler metadata. A generic type can combine several kinds of evidence.
+Open **Compose stability** from a composable function's gutter indicator. The popup lists the function name and status counts. Each input includes its source type, explanation, and evidence. Labels identify built-in rules, declared contracts, source inference, and compiler metadata. Generic types can combine evidence from several sources.
 
-These are input estimates, not a verdict that the function is skippable.
+The popup estimates input stability. It cannot establish whether the function is skippable.
 
 ![Function stability details in the dark IDE theme](images/details-dark.png)
 
-To open the same view from the keyboard, place the caret inside the function, open **Find Action**, and choose **Inspect Compose Stability**. The action is also in the editor context menu. You can select and copy explanation text, scroll through longer parameter lists, and resize the popup. Press **Escape** to return to the editor. Editing the source or switching editors closes the popup so it cannot keep showing an outdated result.
+For keyboard access, place the caret inside the function. Open **Find Action** and choose **Inspect Compose Stability**. The editor context menu also includes this action. The popup supports text selection, copying, scrolling, and resizing. Press **Escape** to return to the editor. Source edits and editor switches close the popup to prevent stale results.
 
-Choose **Go to declaration** when an explanation offers it. The editor opens the responsible property or the inferred stable class. Nested explanations can lead to a property inside another source class. Targets come from resolved declarations in the same IDE module. The link is available by keyboard and includes the parameter name for screen readers.
+Use **Go to declaration** to open the property or inferred stable class responsible for a result. Nested explanations can link to properties in other source classes. The plugin uses resolved declarations within the same IDE module. Keyboard users can follow these links. Screen readers receive the parameter name with each link.
 
-Navigation stops if indexing starts or any project source changes after the analysis. Close and reopen the details to refresh the targets. A missing link means that the explanation has no supported source target. Compiler text and binary metadata do not become guessed source links.
+If indexing starts or project source changes, the plugin stops navigation from the old analysis. Reopen the details to refresh navigation targets. Explanations without supported source targets have no link. The plugin never guesses source links from compiler text or binary metadata.
 
 ![The same details in the light IDE theme](images/details-light.png)
 
-Counts include value parameters and an extension receiver, when present. Context parameters are not analysed. Functions with no covered inputs show that explicitly. An unstable input takes precedence in the gutter icon; otherwise an unknown input takes precedence over stable inputs.
+The counts cover value parameters and any extension receiver. Analysis excludes context parameters. The popup states when a function has no covered inputs. For gutter icons, unstable takes priority over unknown. Unknown takes priority over stable.
 
 ## Compiler evidence
 
-For a resolved binary dependency, the plugin can read the class’s existing Compose stability metadata. It reads the class file without loading or executing it. You do not need to add a plugin or dependency to the project being inspected.
+Jewel Tooling reads existing Compose stability metadata from resolved binary dependency classes. Reading never loads or executes the class. The inspected project needs no extra plugin or dependency.
 
-The reader accepts Kotlin metadata `[2, 3, 0]` and `[2, 4, 0]` in Java 8–25 class files. It rejects preview class files. The [testing guide](../docs/testing.md#compatibility) lists the compiler configurations that produce those fixtures.
+The metadata reader supports Kotlin versions `[2, 3, 0]` and `[2, 4, 0]` in nonpreview Java 8–25 class files. It rejects preview classes. See the [testing guide](../docs/testing.md#compatibility) for the compiler configurations used to generate test fixtures.
 
-A metadata version does not identify the compiler patch version. Computed stability initializers and other unsupported shapes stay **unknown**. Other metadata versions and class files newer than Java 25 also stay **unknown**. This does not provide general coverage of published Jewel or Compose libraries.
+Metadata versions cannot identify a compiler patch version. The reader returns **unknown** for computed stability initializers and other unsupported shapes. Other metadata versions and classes newer than Java 25 also produce **unknown**. Support for these formats does not cover all published Jewel or Compose libraries.
 
-For generic classes, the metadata identifies which type arguments matter. For example, a compiled `Box<T>(val value: T)` combines the compiler’s class result with the analysis of `T`. A star projection stays unknown when that argument is required. An unused type argument does not affect the result. The details view labels compiler and source evidence separately when both contribute.
+Generic class metadata selects the type arguments that affect stability. For a compiled `Box<T>(val value: T)`, analysis combines the compiler's class result with `T`'s result. A required star projection produces unknown. Unused type arguments have no effect. When compiler and source evidence both contribute, the details view labels each separately.
 
-These class results do not establish whether a function is restartable or skippable. Stability configuration files are not read. A dependency without supported metadata can still be stable through a recognized `@Stable` or `@Immutable` contract.
+Class results cannot establish function restartability or skippability. Jewel Tooling does not read stability configuration files. A recognized `@Stable` or `@Immutable` contract can establish stability even when dependency metadata is unsupported.
 
 ## Limits
 
-The provider covers value parameters and extension receivers. It does not show context-parameter hints. Explicit `FunctionN` class references can remain unknown even when function syntax such as `() -> Unit` is stable.
+Hints cover value parameters and extension receivers. Context parameters have no hints. An explicit `FunctionN` class reference can stay unknown even when equivalent syntax such as `() -> Unit` is stable.
 
-The plugin does not interpret external stability configuration files or custom and inherited stability contracts. It leaves unannotated library types such as `Pair` and `Triple` unknown. Singleton objects and value classes, including unsigned types, are also unknown unless a recognized contract applies.
+Analysis excludes external stability configuration files, custom contracts, and inherited contracts. Unannotated library types, including `Pair` and `Triple`, stay unknown. Singleton objects and value classes, including unsigned types, need a recognized contract to avoid an unknown result.
 
-Generic substitution handles concrete stored types. Repeated instantiations of the same class, such as `Box<Box<String>>`, conservatively stop at the recursion guard. Recursive types remain unknown. Inner and local classes also remain unknown because they can capture state outside their declared properties. Computed properties without backing fields and companion state do not count as instance storage. Delegated storage is unknown.
+Generic substitution supports concrete stored types. The recursion guard stops repeated instances of the same class, including `Box<Box<String>>`. Recursive types stay unknown. Inner and local classes stay unknown because they can capture state beyond their declared properties. Instance storage excludes computed properties without backing fields and companion state. Delegated storage produces unknown.
 
-Analysis processes the extension receiver, then parameters in declaration order. It stops after 256 type visits for a function or a nesting depth of 12. Earlier completed hints remain. Exhausted assessments say unknown and explain the budget limit. Binary reads also stop at 1 MiB per class, 4 MiB per function, or 32 distinct class files. No result is retained across editing passes.
+Analysis visits the extension receiver first, then parameters in declaration order. Each function has a budget of 256 type visits and a nesting depth of 12. Completed hints survive budget exhaustion. Unfinished assessments return unknown with the budget reason. Binary reads stop at 1 MiB per class, 4 MiB per function, or 32 distinct class files. Each editing pass computes fresh results.
 
 ## Missing hints
 
-Wait for indexing and Gradle synchronization to finish. Check that `androidx.compose.runtime.Composable` resolves in the editor and that the function has explicit parameter types. An unrelated annotation named `Composable` does not activate the provider.
+Let indexing and Gradle synchronization finish. Confirm that the editor resolves `androidx.compose.runtime.Composable`. Give the function explicit parameter types. The provider ignores unrelated annotations that share the name `Composable`.
 
-Check the inlay setting under [Customisation](customisation.md). An unknown result is useful evidence of an unsupported case. It is not a claim that the type is unstable. Include a small public reproduction when reporting a result you believe is wrong.
+Check the inlay settings in [Customisation](customisation.md). Unknown means the evidence cannot support a classification. It does not establish instability. If a result appears wrong, report it with a small public reproduction.

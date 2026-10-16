@@ -1,7 +1,8 @@
 # Architecture
 
-The [user guide](../user-guide/README.md) is authoritative for supported behaviour and limits.
-This map describes implemented code. Local proposals in `.plans/` do not extend this contract.
+This page maps the implemented modules and their boundaries.
+For supported behaviour and limits, use the [user guide](../user-guide/README.md).
+Proposals in `.plans/` describe no additional supported behaviour.
 
 | Module | Responsibility | Boundary |
 | --- | --- | --- |
@@ -21,40 +22,51 @@ This map describes implemented code. Local proposals in `.plans/` do not extend 
 
 ## Static evidence
 
-Use resolved annotations and types, not short-name matching or build-system detection.
-Keep Analysis API symbols, types, and session-owned objects inside the analysis session.
-Return immutable result data. Preserve cancellation and invalidate results when source or project state changes.
+Resolve annotations and types through the Kotlin Analysis API.
+Short names and build-system detection cannot establish type identity.
+Keep API symbols, types, and other session-owned objects within their analysis session.
+Return immutable data. Let cancellation propagate.
+Invalidate results after source or project state changes.
 
-Declared `@Stable` and `@Immutable` annotations are contracts, not proofs that their promises hold.
-Source inference and built-in knowledge remain distinct from supported compiler metadata.
-Read class files without loading dependency classes. Unsupported metadata, initializer shapes, or budgets produce unknown results.
-Mixed evidence must not acquire a compiler-confirmed border merely because one nested property has metadata.
+Trust declared `@Stable` and `@Immutable` contracts without claiming to verify their implementation.
+Label source inference, built-in rules, and supported compiler metadata separately.
+Inspect class files without loading dependency classes.
+Return unknown for unsupported metadata, unsupported initializer shapes, or exhausted budgets.
+Leave mixed evidence borderless even when a nested property has compiler metadata.
 
-Stability alone does not prove skippability. Strong skipping can skip functions with unstable parameters.
-Neither an unstable hint nor an execution count proves a performance defect.
+Strong skipping can skip functions with unstable parameters.
+Stability results therefore cannot establish skippability.
+Unstable hints and execution counts cannot establish performance defects.
 
 ## Runtime and lifecycle
 
-The IDE registers a Compose Inspection executor beside Run and Debug. That executor installs bundled support and launches a temporary copy of a supported local run configuration.
-The startup agent observes Compose callbacks in the target JVM. Completed events are paired off the composition thread and spilled to a local file. Live snapshots drain that writer without dropping in-flight pairs, then send per-site totals over authenticated loopback; the full event list is read when capture stops.
-The IDE does not inject Compose or its own Kotlin runtime into the target's application classloader.
-Keep the bridge JDK-only. Keep agent libraries private. Check packaged contents after dependency changes.
+The IDE places the Compose Inspection executor beside Run and Debug.
+The executor installs bundled support, then launches a temporary copy of a supported local configuration.
+The startup agent observes Compose callbacks in the target JVM.
+A background writer pairs completed events and stores them in a local file.
+Live snapshots drain the writer without losing in-flight pairs.
+They send per-site totals over authenticated loopback. Stopping capture reads the full event list.
 
-Current capture records Compose callbacks on the composition thread and rejects unsupported or multiple runtime copies.
-It does not identify skipped calls, invalidation causes, argument values, or composition instances.
-The live view can annotate matching Kotlin files in the editor, including dependency sources, from compiler file names in the recording. Details file names open when that file resolves in the project or its dependencies.
-See the [live inspection guide](../user-guide/live-inspection.md) for launch types and capture semantics.
+The target application classloader receives neither Compose nor the IDE's Kotlin runtime from the plugin.
+Limit the bridge to JDK dependencies. Keep agent libraries private.
+After dependency changes, inspect the packaged contents.
 
-Cancel owned work, close sockets, and release listeners on disconnect, project disposal, and plugin unload.
-Cleanup must not wait for nonmodal EDT work while a modal unload waits for cancellation.
-Keep UI completion cancellable. Bound necessary resource cleanup and keep blocking I/O off the EDT.
+Capture receives callbacks on the composition thread. It rejects unsupported runtimes and multiple runtime copies.
+Callbacks cannot identify skipped calls, invalidation causes, argument values, or composition instances.
+The live view uses recorded compiler file names to annotate matching Kotlin sources, including dependencies.
+File names in the details open sources that resolve within the project or its dependencies.
+The [live inspection guide](../user-guide/live-inspection.md) describes supported launches and capture semantics.
+
+On disconnect, project disposal, or plugin unload, cancel owned work and release sockets and listeners.
+Modal unload waits for cancellation. Cleanup must therefore avoid waiting for nonmodal event dispatch thread (EDT) work.
+Allow cancellation of UI completion. Bound resource cleanup and run blocking input and output work outside the EDT.
 
 ## Compatibility and fixtures
 
-The [compiler matrix](testing.md#compatibility) lists the accepted metadata and tested compiler configurations.
-The [testing guide](testing.md#compatibility) distinguishes IDE, build, bytecode, and target runtime versions.
-A missing upper IDE build limit permits installation; it does not prove compatibility with every future IDE.
+Consult the [compiler matrix](testing.md#compatibility) for accepted metadata and tested compiler configurations.
+The [testing guide](testing.md#compatibility) also lists IDE, build, bytecode, and target runtime versions separately.
+No upper IDE build limit blocks installation. Future IDE compatibility still requires testing.
 
-Standalone tests cover a real Gradle application. IJPL tests build through Bazel and export its dependency model.
-They do not validate every third-party Bazel importer or KMP source-set model.
-Keep SDK exports and fixture code outside the production distribution.
+Standalone tests run a real Gradle application. IJPL tests compile with Bazel and export the dependency model.
+Coverage excludes other third-party Bazel importers and Kotlin Multiplatform source-set models.
+Exclude SDK exports and fixture code from the production distribution.

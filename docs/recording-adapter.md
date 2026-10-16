@@ -1,16 +1,28 @@
 # Experimental recording adapter
 
-This page describes the older manual adapter for contributors who control a target bootstrap. It is not required for static hints or **Run with Compose Inspection**. Do not combine it with the inspection agent.
+Contributors with control of a target bootstrap can use this older manual adapter.
+Static hints and **Run with Compose Inspection** work without it.
+Keep the adapter separate from the inspection agent.
 
-The bootstrap must own the Compose tracer slot before the target starts its Compose content. Compose provides a setter without a getter. The adapter cannot detect or restore another tracer. Do not install it from an ordinary IDE plugin.
+Reserve the Compose tracer slot in the bootstrap before starting Compose content.
+Compose exposes a setter with no getter, so the adapter cannot detect or restore another tracer.
+Ordinary IDE plugins must not install this adapter.
 
-In a controlled standalone application, include the exported `recording.jar` and `recording-compose.jar` from `fixtures/standalone/.local`. Supply Jackson Core 2.19.0. Reuse the application's Compose runtime. The adapter targets the AndroidX runtime 1.11.1 API and requires JVM 21 or newer.
+For a controlled standalone target, add `recording.jar` and `recording-compose.jar` exported to `fixtures/standalone/.local`.
+Add Jackson Core 2.19.0 and reuse the application's Compose runtime.
+The adapter requires JVM 21 or newer and targets the AndroidX runtime 1.11.1 API.
 
-For IJPL, keep the bootstrap in a disposable target that explicitly reserves the tracer slot. The fixture uses the platform's Compose and Jackson libraries. It does not package another runtime. Activity from other compositions in that runtime classloader can also appear.
+For IJPL, use a disposable target whose bootstrap explicitly reserves the tracer slot.
+The fixture reuses platform Compose and Jackson libraries without packaging another runtime.
+The capture can include other compositions that share that runtime classloader.
 
-Install one `OwnedCompositionTracer` with `installOwnedDispatcher()`. Call `startRecording(CaptureTarget(...))` and `stopRecording()` between controlled interactions on the composition thread. Serialize the returned snapshot with `RecordingFiles.writeNew(path, recording)` on a worker thread. The method refuses to overwrite an existing file. The [standalone fixture](../fixtures/standalone/src/main/kotlin/example/FixtureRecording.kt) shows this sequence.
+Call `installOwnedDispatcher()` once to install an `OwnedCompositionTracer`.
+On the composition thread, call `startRecording(CaptureTarget(...))` and `stopRecording()` around controlled interactions.
+On a worker thread, write the snapshot with `RecordingFiles.writeNew(path, recording)`.
+That method rejects existing destination files.
+See the [standalone fixture](../fixtures/standalone/src/main/kotlin/example/FixtureRecording.kt) for the full sequence.
 
-For live controls, give the existing dispatcher to a `LiveCompositionHost` before showing the development UI:
+To support live controls, pass the existing dispatcher to `LiveCompositionHost` before displaying the development UI:
 
 ```kotlin
 val dispatcher = OwnedCompositionTracer.installOwnedDispatcher()
@@ -21,8 +33,15 @@ val inspection = LiveCompositionHost(
 )
 ```
 
-This example requires the corresponding recording imports and `javax.swing.SwingUtilities`. It assumes that all captured composition work uses the Swing event dispatch thread. Expose `inspection.connectionString` through an explicit copy control. Do not display or log the token. Call `inspection.close()` when the development target closes. The host owns the recording sink while open; do not call the dispatcher's recording methods concurrently. Closing the host leaves the dispatcher installed and inactive. It does not restore another tracer.
+Add the recording imports and `javax.swing.SwingUtilities` for this example.
+All captured composition work must run on the Swing event dispatch thread.
+Offer an explicit control to copy `inspection.connectionString`. Keep the token out of displays and logs.
+Call `inspection.close()` when closing the development target.
 
-Only one session can be attached at a time. Stop it before starting another, including after truncation. General concurrent restart is unsupported because the callback API has no session token.
+The open host owns the recording sink. Avoid concurrent calls to the dispatcher's recording methods.
+Closing the host leaves the dispatcher installed but inactive. It cannot restore a previous tracer.
 
-The [live inspection guide](../user-guide/live-inspection.md) is the supported path for application authors.
+Attach at most one session. Stop it before starting another, even after truncation.
+The callback API lacks session tokens, so general concurrent restart is unsupported.
+
+Application authors should follow the supported setup in [Live inspection](../user-guide/live-inspection.md).

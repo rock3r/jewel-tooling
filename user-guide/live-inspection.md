@@ -1,63 +1,65 @@
 # Live inspection
 
-Select the run configuration you normally use to start a Compose UI, then choose **Run with Compose Inspection**. The plugin launches a temporary copy of that configuration, connects to its target, and starts capture when Compose loads.
+Use **Run with Compose Inspection** with the configuration that normally starts your Compose UI. Jewel Tooling launches a temporary copy and connects to the target. Capture begins when the target loads Compose.
 
-The target must use a local JVM of version 21 or newer. You do not add a dependency, change application source, or copy a connection token.
+The target requires a local JVM, version 21 or newer. Launch requires no extra dependency, source edit, or copied connection token.
 
 ## Launch
 
-1. Choose **Run with Compose Inspection** from the run widget (beside Run and Debug), the configuration gutter, or **Run → Run with Compose Inspection**. The default shortcut is Ctrl+Alt+Shift+F10, or Ctrl+Option+Shift+R on macOS.
-2. Use your application. Execution counts update on the **Live recompositions** tab in the **Compose Inspection** tool window.
-3. Click **Stop Capture**, then **Export Recording** to save the result. A notification can reveal the saved file in the system file manager. **Import Recording** loads a saved file into this tab and the editor badges. **Close Recording** clears that session.
+1. Choose **Run with Compose Inspection** beside Run and Debug, from the configuration gutter, or from **Run → Run with Compose Inspection**. The default shortcut is Ctrl+Alt+Shift+F10. On macOS, use Ctrl+Option+Shift+R.
+2. Interact with the application. Read execution counts in **Compose Inspection → Live recompositions**.
+3. Click **Stop Capture**. Choose **Export Recording** to save the result. Use the notification to reveal the file in your system file manager. **Import Recording** loads a saved session into the tab and editor badges. **Close Recording** clears the session.
 
-**Tools → Install Inspection Support** can prepare the agent without launching.
+To prepare the agent before launch, choose **Tools → Install Inspection Support**.
 
-The launch uses a temporary copy of your configuration. Its existing build steps run before the application starts. Your saved configuration stays unchanged. A normal **Run** starts your application without the inspection agent.
+The temporary configuration runs your existing build steps before starting the application. Jewel Tooling leaves the saved configuration unchanged. The normal **Run** action launches without the inspection agent.
 
-The plugin does not connect to remote hosts.
+Inspection connections support local hosts only.
 
 ### Jewel Standalone and Gradle
 
-Select a Gradle run configuration with one explicit application task, such as `:desktop:run`. Use the full task path when different modules have tasks with the same name. The task must be a `JavaExec` task. A task that only delegates to another task is not sufficient. Included Gradle plugin builds that run while the project configures are ignored until that application task is in the task graph.
+Select a Gradle configuration with one explicit application task, such as `:desktop:run`. If modules share a task name, use its full path. The selected task must use `JavaExec` directly. Delegating to another task does not qualify. During project configuration, inspection ignores included Gradle plugin builds until the application task enters the task graph.
 
-The plugin adds the agent to that application's JVM. It does not add it to the Gradle daemon. The temporary launch disables Gradle's configuration cache. Your project's configuration stays unchanged. Remote targets, compound configurations, and `runIde` split mode are not supported.
+Jewel Tooling adds the agent only to the application JVM. The Gradle daemon receives no agent. The temporary launch disables Gradle's configuration cache without changing project configuration. Inspection excludes remote targets, compound configurations, and `runIde` split mode.
 
 ### IntelliJ Platform and Bazel
 
-Open the project's supported IntelliJ model and select its local **Application** or **Kotlin** run configuration. Keep the normal Bazel build step in that configuration, if the project requires one. Then choose **Run with Compose Inspection**.
+Import the project's supported IntelliJ model. Select its local **Application** or **Kotlin** run configuration. Retain any Bazel build step the project requires. Choose **Run with Compose Inspection**.
 
-The selected configuration must start the target IDE in a separate JVM. Open the plugin UI in that target IDE and interact with it to produce trace events. The **Compose Inspection** tool window in the authoring IDE receives those events. JBR 25 is supported by the agent's bytecode reader.
+The configuration must start the target IDE in a separate JVM. Interact with the plugin UI in that IDE to generate trace events. The authoring IDE receives events in **Compose Inspection**. The agent's bytecode reader supports JBR 25.
 
-The plugin does not convert an arbitrary Bazel command into an IDE launch configuration. Use the project's existing configuration that already starts its development IDE.
+Use the project's existing development IDE launch configuration. Jewel Tooling cannot create one from an arbitrary Bazel command.
 
 ## Read the live capture
 
-The **Live recompositions** tab shows capture state, completed execution count, and recording window. Select a trace site to inspect its details in the side pane. Filter the table, with completion from recorded compiler text, to focus on one composable.
+Read capture state, completed executions, and the recording window in **Live recompositions**. Select a trace site to open its side-pane details. The table filter supports completion from recorded compiler text.
 
-The table starts sorted by executions, highest first. Double-click a row to open its Kotlin file when that file resolves. Choose **Hide dependencies** to keep sites whose files are in this project's source and hide Compose, Jewel, and other library sites.
+Initially, the table sorts executions from highest to lowest. Double-click a row to open its resolved Kotlin file. **Hide dependencies** keeps project-source sites and hides library sites, including Compose and Jewel.
 
-Matching Kotlin files in this project or its dependencies show inclusive duration as a badge at the end of the matching function or property line. Hover it for its share of recorded inclusive time and the execution count. The value uses the same millisecond format as the live table. Click a duration badge to select that site in the tool window. Click a file name in the details pane to open that Kotlin file when it resolves.
+For matching Kotlin sources, duration badges appear at the end of function or property lines. Dependency sources also support badges. Hover over a badge to read execution count and its share of recorded inclusive time. Badges use the live table's millisecond format. Click a badge to select its site in the tool window. Click a resolved file name in the details pane to open the Kotlin source.
 
-The recording window is elapsed capture time. Inclusive durations also contain nested calls.
+The recording window measures elapsed capture time. An inclusive duration includes time in nested calls.
 
 ![The Compose Inspection tool window connected to the IJPL target](images/live-ijpl.png)
 
-**Waiting for Compose** means that the connection exists but the target has not loaded its Compose runtime yet. Open a Compose surface in the target. Capture starts automatically when a supported runtime becomes available. An unsupported runtime or multiple runtime copies stop capture with an explanation. The agent captures trace callbacks on the composition thread. Pairing, site totals, and the event log run on a low-priority background thread so composition stays off the recording store.
+**Waiting for Compose** identifies a connected target that has not loaded Compose. Open a Compose UI in the target. A supported runtime starts capture automatically. Unsupported runtimes or multiple runtime copies stop capture and show an explanation. The agent receives callbacks on the composition thread. A low-priority background thread pairs events, totals sites, and writes the event log. Composition therefore avoids access to the recording store.
 
 ## Stop, disconnect, and limits
 
-**Stop Capture** stops recording and leaves your application running. **Disconnect Target** closes inspection and also leaves the application running. Run with inspection again to create another connection after disconnecting. Use the normal **Stop** control in the Run tool window to stop the application itself.
+Use **Stop Capture** to end recording while the application runs. **Disconnect Target** closes inspection without stopping the application. After disconnecting, launch with inspection again to reconnect. To stop the application, use **Stop** in the Run tool window.
 
-Hover the capture status to read why a limit stopped recording. The session stops after 100,000 completed executions, 1,024 sites, 64 threads, depth 64, or one hour.
+Hover over capture status to see which limit ended recording. Capture stops at 100,000 completed executions, 1,024 sites, 64 threads, depth 64, or one hour.
 
-Starting another capture asks before discarding a nonempty, unexported result. If capture has already ended, **Cancel** keeps that result. **Keep Recording** is only offered while capture is still running. A confirmed final result remains exportable after disconnecting. Disconnecting during capture leaves an incomplete snapshot, which cannot be exported as a final recording.
+Before starting another capture, confirm discarding any nonempty unexported result. For an ended capture, **Cancel** preserves the result. During capture, **Keep Recording** preserves the running session. Confirmed final results remain exportable after disconnection. Disconnecting during capture leaves an incomplete snapshot that cannot be exported as a final recording.
 
-**Import Recording** and **Tools → Open Compose Recording** load a saved file into this tab. That replaces the current result and disconnects a live target. **Close Recording** clears the current result and its duration badges. Both actions ask before discarding a nonempty unexported result.
+Load saved files through **Import Recording** or **Tools → Open Compose Recording**. Import replaces the current result and disconnects any live target. **Close Recording** clears the result and duration badges. Importing and closing both require confirmation before discarding a nonempty unexported result.
 
-The live view does not identify initial composition, skipped calls, invalidation causes, or composition instances. Missing compiler trace markers can hide activity. An empty live view does not prove that the application is idle.
+The live view cannot identify initial composition, skipped calls, invalidation causes, or composition instances. Without compiler trace markers, activity can remain invisible. An empty view cannot establish that the application is idle.
 
-A session accepts at most 100,000 completed executions, 1,024 sites, 64 threads, and a nesting depth of 64. Compiler text is limited to 1 KiB per site. Files are limited to 24 MiB, and the recording window is limited to one hour. Live snapshots send per-site totals; the full event list is read from the target when capture stops. Reaching a limit ends capture and marks the result **Truncated**. The recorder discards unfinished root segments and reports their counts. Later activity is unrecorded; its extent is unknown. Clock failures produce **Failed** recordings. The report preserves completed events from before the failure.
+Session limits are 100,000 completed executions, 1,024 sites, 64 threads, and nesting depth 64. Each site's compiler text has a 1 KiB limit. Files have a 24 MiB limit. Capture lasts at most one hour. Live snapshots contain per-site totals. Stopping capture reads the full event list from the target.
 
-Target, compiler, runtime, and build labels are declarations. They do not prove a build identity. Runtime classloader identity remains unknown. Sessions are not merged.
+At a limit, capture ends with a **Truncated** result. The recorder drops unfinished root segments and reports their counts. The extent of later, unrecorded activity remains unknown. A clock failure creates a **Failed** recording. Its report retains events completed before the failure.
 
-Live inspection uses an authenticated loopback connection to the configured development target. Automatic launches use a startup agent to observe Compose trace callbacks. The older manual recorder adapter is a contributor-only path; see [Recording adapter](../docs/recording-adapter.md).
+Target, compiler, runtime, and build labels declare information without verifying build identity. Runtime classloader identity stays unknown. Each session remains separate.
+
+An authenticated loopback connection links inspection to the configured development target. Automatic launches observe Compose trace callbacks through a startup agent. Contributors can use the older manual path described in [Recording adapter](../docs/recording-adapter.md).

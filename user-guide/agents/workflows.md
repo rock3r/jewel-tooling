@@ -1,6 +1,6 @@
 # Agent workflows
 
-Copy this block into a consuming project's agent instructions if useful. Jewel Tooling does not install it automatically.
+To add analysis rules to a consuming project, copy this block into its agent instructions. Jewel Tooling leaves this step to you.
 
 ```markdown
 Before making Compose stability claims, use the Jewel Tooling MCP tools.
@@ -14,4 +14,4 @@ Do not infer skippability, recomposition counts, or performance problems from st
 Do not add @Stable or @Immutable merely to silence findings. Their contracts must hold.
 ```
 
-The [MCP server](mcp.md) page is the full contract: tool sequence, evidence labels, unsaved-document behaviour, and error codes.
+Read [MCP server](mcp.md) for the tool sequence, evidence labels, unsaved-document behaviour, and error codes.

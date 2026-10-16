@@ -1,9 +1,9 @@
 # Customisation
 
-Open **Settings → Editor → Inlay Hints** and find **Compose parameter stability** under Kotlin. Turn the provider off to hide its hints; turn it on to restore them. The setting does not modify your source or build.
+To control hints, open **Settings → Editor → Inlay Hints**. Under Kotlin, enable or disable **Compose parameter stability**. This setting leaves your source and build unchanged.
 
-Gutter indicators have a separate switch under **Settings → Editor → General → Gutter Icons → Compose stability summary**. The detail action remains available when indicators are hidden.
+To control gutter indicators, use **Settings → Editor → General → Gutter Icons → Compose stability summary**. You can still open the detail action with the indicators hidden.
 
-To change the colours, open **Settings → Editor → Color Scheme → Jewel Tooling**. Each stability state has separate fill and border colours. Live duration badges have ordinary and hot colours. The defaults adapt to light and dark editor schemes.
+Open **Settings → Editor → Color Scheme → Jewel Tooling** to edit colours. Each stability state has its own fill and border settings. Duration badges have ordinary and hot colour settings. Default colours follow light and dark editor schemes.
 
-The inlay text uses the IDE's standard inlay text colour. Unknown results currently stay borderless.
+Hint text follows the IDE's standard inlay text colour. The plugin leaves unknown results without a border.
