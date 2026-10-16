@@ -39,4 +39,16 @@ Do not copy keys into the checkout.
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for the reporting channel once the repository is public.
+See [SECURITY.md](SECURITY.md) for the private reporting channel.
+
+## Marketplace widget
+
+Use this install widget on jewel-ui.dev or another HTML page. GitHub README pages cannot run it.
+
+```html
+<div id="jewel-tooling-install"></div>
+<script src="https://plugins.jetbrains.com/assets/scripts/mp-widget.js"></script>
+<script>
+  MarketplaceWidget.setupMarketplaceWidget('install', 34392, "#jewel-tooling-install");
+</script>
+```
