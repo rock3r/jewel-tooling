@@ -1,20 +1,20 @@
 # Jewel Tooling
 
-Jewel Tooling is an IntelliJ IDEA plugin for Compose UI authors. It shows a static stability estimate beside each `@Composable` parameter, and it can record live composition activity from a local development run.
+Jewel Tooling helps Compose UI authors inspect their code in IntelliJ IDEA. The plugin estimates each `@Composable` parameter's stability. It also records composition activity during local development runs.
 
-You do not add a dependency, change application source, or start a server for the editor hints. Live inspection uses a bundled agent on a temporary copy of a run configuration you already have.
+Editor hints work without extra dependencies, source changes, or a server. For live inspection, the plugin adds its bundled agent to a temporary copy of an existing run configuration.
 
-This is the 0.9.0 distribution. It targets IntelliJ IDEA 2026.2.0.1 (build 262.8665.337) with the bundled Kotlin plugin in K2 mode. Install it from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling), from a [GitHub Release](https://github.com/rock3r/jewel-tooling/releases), or from the ZIP built in this repository.
+Version 0.9.0 targets IntelliJ IDEA 2026.2.0.1 (build 262.8665.337). It uses the bundled Kotlin plugin in K2 mode. Install from [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/34392-jewel-tooling), a [GitHub Release](https://github.com/rock3r/jewel-tooling/releases), or a ZIP built from this repository.
 
 ## What you get
 
 ![Stable and unstable parameter hints in a Jewel Standalone project](images/standalone-editor.png)
 
-Editor hints appear after parameter types in project sources and in attached dependency Kotlin sources. Hover a hint for its reason. Click the function gutter icon for every input in one place.
+The editor shows hints after parameter types in project Kotlin files and attached dependency sources. Hover over a hint to read its reason. Click a function's gutter icon to inspect all its inputs.
 
 ![A live capture from a Jewel Standalone target](images/live-standalone.png)
 
-**Run with Compose Inspection** starts your selected configuration, connects, and fills the **Live recompositions** tab as you use the UI. Inclusive duration badges appear at the end of matching function or property lines. Those times include nested calls and capture overhead. They are not frame times, and they do not prove a skip or a performance problem.
+Choose **Run with Compose Inspection** to launch the selected configuration and connect to its target. The **Live recompositions** tab updates as you use the UI. Matching function and property lines show inclusive duration badges. Each duration includes nested calls and capture overhead. These measurements cannot establish frame times, skipped calls, or performance problems.
 
 ## Start here
 
@@ -27,4 +27,4 @@ Editor hints appear after parameter types in project sources and in attached dep
 | [Customisation](customisation.md) | Change hint colours, gutters, and inlay visibility |
 | [Agents](agents/README.md) | Use the same static analysis from a coding agent |
 
-Contributors: start at [CONTRIBUTING.md](../CONTRIBUTING.md). Internal architecture, testing, and conventions live under [docs/](../docs/architecture.md).
+For contributor setup, read [CONTRIBUTING.md](../CONTRIBUTING.md). The [internal docs](../docs/architecture.md) cover architecture, tests, and conventions.

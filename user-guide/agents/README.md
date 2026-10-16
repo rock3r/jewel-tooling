@@ -1,8 +1,8 @@
 # Coding agents
 
-Jewel Tooling can expose the same static Compose stability analysis to a coding agent running against your open project. It uses the editor engine. You do not launch the application, add a build plugin, or change a dependency.
+Coding agents can use Jewel Tooling's editor engine to analyse static Compose stability in an open project. Analysis requires no application launch, build plugin, or dependency change.
 
-Open **Tools → Compose Analysis MCP Server…**, enable the server, select a coding client, and click **Install**.
+Open **Tools → Compose Analysis MCP Server…**. Enable the server, then select a coding client. Click **Install** to configure access.
 
 | Page | Use it to |
 | --- | --- |
@@ -10,4 +10,4 @@ Open **Tools → Compose Analysis MCP Server…**, enable the server, select a c
 | [Agent skill](skill.md) | Install `jewel-compose-analysis` so the agent cites evidence correctly |
 | [Workflows](workflows.md) | Copy a short instruction block into a consuming project |
 
-Pi support uses **pi-mcp-adapter**. If you use another extension, ask your agent to adapt the setup.
+For Pi, the installer configures **pi-mcp-adapter**. Ask your agent to adapt the setup if you use a different extension.

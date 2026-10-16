@@ -1,45 +1,49 @@
 # Conventions
 
-Use Kotlin for new plugin code. Keep existing Java bootstrap code in Java.
-Use ktfmt kotlinLangStyle, including Gradle Kotlin scripts. Keep ktfmt as the only formatter.
-Apply formatting only to files in your change. Do not reformat a concurrent task's files.
+Write new plugin code in Kotlin. Maintain the existing bootstrap code in Java.
+Format Kotlin and Gradle Kotlin scripts with ktfmt kotlinLangStyle.
+Use no additional formatter. Limit formatting to files owned by your change.
+Leave concurrent tasks' files unchanged.
 
 ## IDE correctness
 
-Use Kotlin Analysis API resolution inside a valid analysis session and read action.
-Do not retain symbols or types in caches, UI models, or asynchronous callbacks.
-Respect indexing: defer analysis or return unknown when the IDE cannot resolve a declaration.
-Check source validity and disposal before applying asynchronous results.
+Resolve declarations with the Kotlin Analysis API in a valid session and read action.
+Keep symbols and types out of caches, UI models, and asynchronous callbacks.
+During indexing, defer analysis or return unknown for unresolved declarations.
+Before applying asynchronous results, check source validity and disposal state.
 
-Do not swallow cancellation or convert it into an unknown result or user error.
-At broad IDE exception boundaries, preserve platform control-flow exceptions before reporting a failure.
-Own coroutines, listeners, and resources with the relevant service or disposable.
-Keep network, file, and process work off the EDT. Use the EDT for Swing mutations.
-Do not hold a read action while waiting for network, process, or EDT work.
+Propagate cancellation without converting it into an unknown result or user-facing error.
+When catching broad IDE exceptions, preserve platform control-flow exceptions before reporting failures.
+Assign coroutine, listener, and resource ownership to the relevant service or disposable.
+Run network, file, and process work outside the event dispatch thread (EDT).
+Use the EDT to change Swing components.
+Release read actions before waiting for network, process, or EDT work.
 
-Exercise disconnect, project close, and dynamic unload when changing resource ownership.
-A bounded cleanup section may release resources; it must not make unload wait for nonmodal UI work.
-See [architecture](architecture.md#runtime-and-lifecycle) for the classloader boundary.
+After resource ownership changes, test disconnect, project close, and dynamic unload.
+Bound resource cleanup so unload never waits for nonmodal UI work.
+Read [architecture](architecture.md#runtime-and-lifecycle) for classloader boundaries.
 
 ## UI and language
 
-Put user-visible plugin strings in `src/main/resources/messages/JewelToolingBundle.properties`.
-Use IDE icons and theme-aware colours. Editor hints use the configurable Jewel Tooling colour scheme keys.
-Keep state labels alongside colours. Test light and dark themes, keyboard focus, accessible names, and dismissal.
-Use IDE splitter components and colours; inspect divider contrast in both themes.
+Store user-facing strings in `src/main/resources/messages/JewelToolingBundle.properties`.
+Choose IDE icons and theme-aware colours. Configure editor hints through the Jewel Tooling colour scheme keys.
+Show text labels with state colours.
+Check light and dark themes, keyboard focus, accessible names, and dismissal.
+Use IDE splitters and colours. Check divider contrast in each theme.
 
-Write concise active sentences. State one topic per sentence and use one term per concept.
-Keep explanations factual: distinguish compiler evidence, inference, unknown results, and runtime observations.
-Do not recommend adding stability annotations merely to make a warning disappear.
+Write short active sentences, each about one idea. Use a consistent term for each concept.
+Explanations must separate compiler evidence, inference, unknown results, and runtime observations.
+Recommend stability annotations only when their contracts hold.
 
 ## Changes and evidence
 
-Inspect the existing diff before editing shared files. Preserve unrelated and untracked work.
-Do not weaken rules, add blanket suppressions, or create baselines to hide findings.
-Explain narrowly justified exceptions and keep them local to the actual unsupported case.
+Read the current diff before changing shared files. Leave unrelated and untracked work intact.
+Keep rule thresholds intact and avoid blanket suppressions or baselines that hide findings.
+For justified exceptions, explain the unsupported case and limit the exception to it.
 
-When adding a module, update the explicit module lists in `scripts/validate.py` and assess its capture inputs in `scripts/verify-artifacts.py`.
+For each new module, update the explicit lists in `scripts/validate.py`.
+Check whether it adds capture inputs to `scripts/verify-artifacts.py`.
 
-Report the commands and results you observed. Separate unrun checks, existing failures, and regressions.
-Do not call a feature implemented because a plan describes it. Keep local plans in ignored `.plans/`.
-Do not include private project names or personal environment paths in public files.
+Report observed commands and results. Identify unrun checks, existing failures, and regressions separately.
+Plans alone cannot establish implementation. Store local plans in ignored `.plans/`.
+Exclude private project names and personal environment paths from public files.

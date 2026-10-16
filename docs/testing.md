@@ -1,7 +1,8 @@
 # Testing
 
-Run commands from the repository root. Use JDK 25 and Python 3.10+.
-The pinned wrapper provisions compilation toolchains. Windows uses `gradlew.bat`.
+Use JDK 25 and Python 3.10+ to run checks from the repository root.
+The pinned Gradle wrapper provisions compilation toolchains.
+On Windows, use `gradlew.bat`.
 
 ## Entry points
 
@@ -12,12 +13,15 @@ The pinned wrapper provisions compilation toolchains. Windows uses `gradlew.bat`
 | `python3 scripts/validate.py full` | Fast checks plus the package profile | IDE downloads and build toolchains; no display |
 | `python3 scripts/validate.py e2e` | SDK export, real Bazel model, standalone interaction, six maintained IDE scenarios | Bazelisk and a graphical session |
 
-The fast profile runs static checks, not JVM tests. The full profile can take substantially longer because it runs Plugin Verifier.
+The fast profile covers static checks only and excludes JVM tests.
+Plugin Verifier can make the full profile substantially slower.
 
-Add `--dry-run` to print the exact command plan as JSON without running tools.
-Each profile stops at its first failure. Inspect reports before running later stages separately for diagnosis.
-CI calls these same entry points. On Linux, wrap `e2e` in `xvfb-run` as CI does, and set `SKIKO_RENDER_API=SOFTWARE_COMPAT` plus `-Dskiko.renderApi=SOFTWARE_COMPAT` so Compose can paint without a GPU.
-Do not use unqualified `test` from the root: it also selects display-dependent subproject tests.
+To inspect a profile's JSON command plan without execution, add `--dry-run`.
+Profiles stop at the first failure. Read reports before diagnosing later stages with separate runs.
+Continuous integration (CI) uses these entry points too.
+On Linux, wrap `e2e` in `xvfb-run`, as CI does.
+Set `SKIKO_RENDER_API=SOFTWARE_COMPAT` and `-Dskiko.renderApi=SOFTWARE_COMPAT` to let Compose paint without a GPU.
+Avoid unqualified `test` at the root. That command also selects subproject tests that require a display.
 
 ## Targeted checks
 
@@ -29,10 +33,11 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 python3 scripts/check-doc-links.py
 ```
 
-Root tests compile and load real compiler fixtures. `agent:test` exercises forked JVMs and the IDE classloader boundary.
-Add a regression case when changing a verdict, explanation, or editor behavior.
-Keep negative metadata and cancellation tests when changing analysis.
-See [static analysis](static-analysis.md) for source coverage and typed-check limitations.
+The root tests compile and load fixtures produced by real compilers.
+`agent:test` covers forked JVMs and the IDE classloader boundary.
+Add regression tests for changes to verdicts, explanations, or editor behaviour.
+Preserve negative metadata cases and cancellation tests during analysis changes.
+Read [static analysis](static-analysis.md) for source coverage and limits of typed checks.
 
 ## Compatibility
 
@@ -45,7 +50,7 @@ See [static analysis](static-analysis.md) for source coverage and typed-check li
 | Binary metadata reader | Java 8–25 nonpreview classes; Kotlin metadata `[2, 3, 0]` and `[2, 4, 0]` |
 | Compiler matrix | 2.3.20/JVM 25, 2.4.20-RC3/JVM 25, and 2.4.0/JVM 21 |
 
-The tests compile real dependencies with these configurations:
+Tests compile real dependency classes using these configurations:
 
 | Kotlin and Compose compiler | JVM target | Purpose |
 | --- | --- | --- |
@@ -53,60 +58,80 @@ The tests compile real dependencies with these configurations:
 | 2.4.20-RC3 | 25 | IntelliJ Platform compiler configuration |
 | 2.4.0 | 21 | Previous supported configuration |
 
-These versions describe the compiled dependencies, not the IDE runtime. Running on JBR 25 does not require every dependency to target Java 25. The plugin keeps its Java 21 bytecode target. Source analysis does not depend on the binary metadata reader. A metadata version does not identify the compiler patch version. Computed stability initializers and other unsupported shapes stay unknown.
+The compiler matrix describes dependency bytecode. The IDE runtime has a separate version.
+JBR 25 can run dependencies targeting older Java versions. The plugin targets Java 21 bytecode.
+Source analysis works independently of the binary metadata reader.
+Metadata versions cannot identify compiler patch versions.
+Computed stability initializers and unsupported shapes produce unknown results.
 
-The [editor guide](../user-guide/editor.md#compiler-evidence) explains what those class results mean for authors.
-Compile and test a new baseline before changing compatibility claims.
-`:verifyPlugin` checks the current configured IDE. It does not prove dynamic unload, every newer IDE, or Android Studio support.
+The [editor guide](../user-guide/editor.md#compiler-evidence) explains how authors can use class results.
+Before claiming a new baseline works, compile and test it.
+`:verifyPlugin` checks only the configured IDE.
+Dynamic unload, newer IDEs, and Android Studio need separate checks.
 
 ## Spectre and lifecycle
 
-The maintained suite is `JewelTargetsTest`. Its six cases cover standalone and IJPL editor/live workflows, one-click launches, and static MCP controls.
-The older `EditorSpikeTest` is exploratory and is not part of this maintained suite.
+Run `JewelTargetsTest` for the maintained suite.
+Its six cases cover standalone and IJPL editor and live workflows, one-click launches, and static MCP controls.
+The exploratory `EditorSpikeTest` remains outside this suite.
 
 ```sh
 python3 scripts/validate.py e2e
 ```
 
-Inspect JUnit XML, screenshots, and scenario assertions under `e2e/runner/build/` and `fixtures/standalone/build/`.
-Require the expected cases to run without skips. Check live events, stop/export, disconnect, reload, and unchanged saved configurations.
-The suite tests unload during capture. Static descriptor verification alone cannot replace that test.
-Bazel evidence is in `fixtures/ijpl/build/ide-project/model-evidence.json`.
-The test validates an exported model, not an importer wizard.
+Find JUnit XML, screenshots, and scenario assertions under `e2e/runner/build/` and `fixtures/standalone/build/`.
+Confirm that all expected cases ran without skips.
+Check live events, stopping, exporting, disconnecting, reloading, and preservation of saved configurations.
+The suite exercises unload during capture. Static descriptor checks cannot establish that lifecycle behaviour.
+Read Bazel evidence in `fixtures/ijpl/build/ide-project/model-evidence.json`.
+The test checks the exported model without exercising an importer wizard.
 
-For a cached IDE, pass `--ide-path /path/to/IntelliJ-IDEA.app` to the E2E entry point.
-Use an installed IDE home accepted by IDE Starter, not a flattened Gradle transform directory.
+To reuse a cached IDE, give the E2E entry point `--ide-path /path/to/IntelliJ-IDEA.app`.
+Select an installed IDE home accepted by IDE Starter.
+Flattened Gradle transform directories are unsuitable.
 
 ## Retina evidence
 
-Use an unlocked graphical session with screen-capture permission and a real AWT scale of 2.0.
+Capture in an unlocked graphical session with screen-capture permission.
+The actual AWT scale must be 2.0.
 
 ```sh
 ./scripts/capture-retina.sh
 python3 scripts/verify-artifacts.py --images
 ```
 
-The script creates one capture ID, snapshots source inputs, runs the fixtures, and promotes only matching successful captures.
-Keep all thirteen images and `user-guide/images/manifest.json` together. Never upscale a 1x image or edit the manifest to bless stale captures.
-Promotion also rewrites three JetBrains Marketplace crops in `user-guide/images/marketplace/` at 1280×800. Do not upscale those either. Upload them in Plugin Screenshots, not in the listing HTML. Captions are in `user-guide/images/marketplace/captions.txt`.
-A changed input requires a fresh capture. Include the new images, manifest, and Marketplace crops with the input change. Linux Xvfb evidence does not replace Retina assets.
-See the [capture skill](../.agents/skills/spectre-evidence/SKILL.md) for failure handling.
+The script assigns one capture ID and snapshots source inputs.
+It runs the fixtures and promotes captures only when they succeed and match those inputs.
+Keep the thirteen images with `user-guide/images/manifest.json`.
+Never enlarge 1x images or edit the manifest to accept stale captures.
+
+Promotion regenerates three 1280×800 JetBrains Marketplace crops in `user-guide/images/marketplace/`.
+Keep their original resolution too. Upload them through Plugin Screenshots. Exclude them from the listing HTML.
+Find captions in `user-guide/images/marketplace/captions.txt`.
+
+After capture inputs change, capture again.
+Commit the new images, manifest, and Marketplace crops with the input change.
+Linux Xvfb evidence cannot replace Retina assets.
+For failures, follow the [capture skill](../.agents/skills/spectre-evidence/SKILL.md).
 
 ## Local distribution
 
-`full` builds the ZIP, runs structure and binary compatibility verification, and checks package contents and screenshot provenance.
-The package mutation tests reject test-only classes, unwanted dependencies, and malformed nested artifacts.
-`prepare-distribution.py` requires one current-version ZIP and writes its SHA-256 file.
-If old ZIPs exist, inspect them and move only obsolete generated distributions out of that directory.
-Do not change allowlists merely to accept unexpected contents.
+The `full` profile builds the ZIP and checks structure, binary compatibility, package contents, and screenshot provenance.
+Package mutation tests reject test-only classes, unwanted dependencies, and malformed nested artifacts.
+`prepare-distribution.py` expects exactly one current-version ZIP and writes its SHA-256 file.
+Inspect old ZIPs before moving obsolete generated distributions out of the directory.
+Investigate unexpected contents without weakening allowlists.
 
-A local ZIP is unsigned unless Marketplace signing environment variables are set. It is not a release. Do not push tags or run publication commands without user approval.
+Local ZIPs remain unsigned unless Marketplace signing environment variables are set.
+Building a ZIP does not publish a release.
+Get user approval before pushing tags or running publication commands.
 
 ## Static MCP
 
-The runtime tests use the official SDK client for HTTP and stdio connections.
-The bootstrap tests check private discovery and project identity.
-`McpAnalysisTest` compares the IDE facade with the existing engine and checks unsaved documents, indexing, cancellation, ranges, and source limits.
+Runtime tests connect over HTTP and stdio with the official SDK client.
+Bootstrap tests verify private discovery and project identity.
+`McpAnalysisTest` compares the IDE facade's results with the engine.
+It also checks unsaved documents, indexing, cancellation, ranges, and source limits.
 
 ```sh
 ./gradlew :mcp-runtime:test :mcp-bootstrap:test
@@ -114,7 +139,7 @@ The bootstrap tests check private discovery and project identity.
 ./gradlew :e2e:runner:test --tests '*JewelTargetsTest.standaloneGradleMcp' --tests '*JewelTargetsTest.bazelIjplMcp'
 ```
 
-Prepare the Gradle and Bazel fixtures through the E2E profile before a filtered IDE run.
-The two MCP scenarios exercise production controls, imported models, unsaved results, re-enable, plugin unload, and project close.
-Their artifacts include `mcp-setup.png` and `mcp-evidence.txt`.
-These tests supplement the existing editor and live inspection scenarios.
+Before filtering an IDE run, prepare Gradle and Bazel fixtures through the E2E profile.
+The two MCP scenarios test production controls, imported models, unsaved results, re-enabling access, plugin unload, and project close.
+They produce `mcp-setup.png` and `mcp-evidence.txt` among their artifacts.
+Run these tests alongside the editor and live inspection scenarios.
